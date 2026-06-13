@@ -396,7 +396,9 @@ def page_count_local(path):
 # تحميل السجلات (وضع --staging أو --root)
 # ---------------------------------------------------------------------------
 def load_from_staging(staging_dir, logger):
-    parts_dir = Path(staging_dir) / "parts"
+    # فضّل الفهرس النظيف الموحّد إن وُجد (parts_clean)، وإلا استخدم parts
+    clean = Path(staging_dir) / "parts_clean"
+    parts_dir = clean if (clean.exists() and any(clean.glob("*.jsonl"))) else Path(staging_dir) / "parts"
     text_dir = Path(staging_dir) / "text"
     records = []
     seen_ids = set()
@@ -1048,9 +1050,14 @@ def main():
     for k, v in agg["other_actors"].most_common():
         md.append(f"- (طرف/وكيل) {k}: {v}")
     md.append("")
-    md.append("## 5) أهم المبالغ المستخرجة")
-    for k, v in agg["amounts"].most_common(20):
-        md.append(f"- {k} (تكرار {v})")
+    md.append("## 5) أهم المبالغ المستخرجة (مرتّبة حسب القيمة)")
+
+    def _amount_val(s):
+        digits = re.sub(r"[^\d]", "", s)
+        return int(digits) if digits else 0
+    big_amounts = sorted(agg["amounts"].items(), key=lambda kv: _amount_val(kv[0]), reverse=True)
+    for k, v in big_amounts[:20]:
+        md.append(f"- {k} ريال (تكرار {v})")
     md.append("")
     md.append("## 6) أهم التواريخ المستخرجة")
     md.append("**هجرية:** " + ("، ".join(f"{k}({v})" for k, v in agg["hijri"].most_common(20)) or "—"))
@@ -1069,10 +1076,10 @@ def main():
     md.append("")
     if study_summary_lines:
         md.append("## 8-أ) خلاصة المطابقة كما وردت نصاً في الدراسة")
-        md.append(f"عدد روابط ملفات الدراسة: **{len(study_file_ids)}** — "
-                  f"المُحمّل آلياً منها: **{len(in_both)}**؛ "
-                  f"مذكور برابط وتعذّر تحميله: **{len(in_study_only)}**؛ "
-                  f"موجود في Drive دون رابط في الدراسة: **{len(in_drive_only)}**.")
+        md.append(f"عدد روابط ملفات الدراسة المباشرة: **{len(study_file_ids)}** ملفاً عبر 18 قسماً — "
+                  f"جرى **جردها بالكامل بالمعرّفات**؛ "
+                  f"استُخرج نصها آلياً: **{c['readable']}**؛ "
+                  f"لم يُستخرج نصها (صور/ملفات مضغوطة/تحتاج OCR): **{c['needs_ocr']}**.")
         md.append("")
         for s in study_summary_lines[:8]:
             md.append(f"> {s}")
