@@ -399,6 +399,15 @@ def load_from_staging(staging_dir, logger):
     parts_dir = Path(staging_dir) / "parts"
     text_dir = Path(staging_dir) / "text"
     records = []
+    seen_ids = set()
+    # خريطة معرّف المجلد -> عنوانه (لتحويل parentId إلى مسار مقروء) إن توفّرت
+    folder_map = {}
+    fm_path = Path(staging_dir) / "study" / "folder_map.json"
+    if fm_path.exists():
+        try:
+            folder_map = json.loads(fm_path.read_text(encoding="utf-8"))
+        except Exception as e:  # noqa
+            logger.warning("تعذّر قراءة folder_map.json: %s", e)
     if not parts_dir.exists():
         logger.error("مجلد parts غير موجود: %s", parts_dir)
         return records
@@ -413,7 +422,18 @@ def load_from_staging(staging_dir, logger):
                 except json.JSONDecodeError as e:
                     logger.warning("سطر JSON غير صالح في %s: %s", jl.name, e)
                     continue
+                rid = rec.get("id")
+                if rid and rid in seen_ids:
+                    continue  # تجنّب التكرار عبر الدفعات
+                if rid:
+                    seen_ids.add(rid)
                 rec["_source_part"] = jl.name
+                # حوّل parentId/parent_path إلى عنوان مجلد مقروء إن أمكن
+                pp = rec.get("parent_path") or ""
+                if pp in folder_map:
+                    rec["parent_path"] = folder_map[pp]
+                elif (not pp or pp == rec.get("parentId")) and rec.get("parentId") in folder_map:
+                    rec["parent_path"] = folder_map[rec.get("parentId")]
                 # حمّل النص إن وُجد
                 rec["_text"] = ""
                 tf = rec.get("text_file")
@@ -792,41 +812,68 @@ def main():
     # ----------------------------------------------------------------------
     # المقارنة مع الدراسة (إن وُجد نص الدراسة في staging/study)
     # ----------------------------------------------------------------------
-    study_index = []
     study_dir = (Path(args.staging) if args.staging else DEFAULT_STAGING) / "study"
     study_text = ""
     if study_dir.exists():
-        for sf in study_dir.glob("*.txt"):
-            study_text += "\n" + sf.read_text(encoding="utf-8", errors="replace")
-    # استخراج فهرس مستندات الدراسة (أسطر تشبه عناوين مرفقات)
-    if study_text:
-        for line in study_text.splitlines():
-            ln = line.strip()
-            if 6 < len(ln) < 160 and any(k in ln for k in
-                ["مرفق", "صك", "عقد", "حكم", "تقرير", "وكالة", "مذكرة", "محضر", "شكوى", "دراسة"]):
-                study_index.append(ln)
+        sf = study_dir / "study.txt"
+        if sf.exists():
+            study_text = sf.read_text(encoding="utf-8", errors="replace")
 
-    drive_titles_norm = {normalize_arabic(r.get("title", "")): r.get("title") for r in files}
-    study_norm = {normalize_arabic(s): s for s in study_index}
+    # روابط الدراسة: معرّفات الملفات والعناوين المستخرجة من روابط الدراسة (إن وُجدت)
+    study_file_ids, id_title_map = [], {}
+    fi = study_dir / "file_ids.json"
+    it = study_dir / "id_title_map.json"
+    if fi.exists():
+        try:
+            study_file_ids = json.loads(fi.read_text(encoding="utf-8"))
+        except Exception:  # noqa
+            pass
+    if it.exists():
+        try:
+            id_title_map = json.loads(it.read_text(encoding="utf-8"))
+        except Exception:  # noqa
+            pass
+
+    staged_ids = {r.get("id") for r in files if r.get("id")}
+    title_by_id = {r.get("id"): r.get("title") for r in files}
 
     in_both, in_study_only, in_drive_only = [], [], []
-    for sn, s in study_norm.items():
-        matched = None
-        for dn, d in drive_titles_norm.items():
-            sa, sb = set(sn.split()), set(dn.split())
-            if sa and sb and len(sa & sb) / len(sa | sb) >= 0.45:
-                matched = d
-                break
-        if matched:
-            in_both.append([s, matched, TAG_SCRIPT, TAG_NEEDS_REVIEW])
-        else:
-            in_study_only.append([s, "غير موجود في Drive (مبدئياً)", TAG_SCRIPT, TAG_NEEDS_REVIEW])
-    matched_drive = {b[1] for b in in_both}
-    for dn, d in drive_titles_norm.items():
-        if d not in matched_drive:
-            in_drive_only.append([d, "غير مذكور في الدراسة (مبدئياً)" if study_text
-                                  else "تعذّر العثور على نص الدراسة - لم تُجرَ المقارنة",
+    if study_file_ids:
+        # مقارنة موثوقة بالمعرّفات (روابط الدراسة المباشرة مقابل الملفات المُحمّلة)
+        study_set = set(study_file_ids)
+        for fid in sorted(study_set):
+            t = title_by_id.get(fid) or id_title_map.get(fid, fid)
+            if fid in staged_ids:
+                in_both.append([t, t, TAG_SCRIPT, TAG_NEEDS_REVIEW])
+            else:
+                in_study_only.append([id_title_map.get(fid, fid),
+                                      "مذكور في الدراسة برابط لكن تعذّر تحميله آلياً - يلزم تحقق",
+                                      TAG_SCRIPT, TAG_NEEDS_REVIEW])
+        for fid in sorted(staged_ids - study_set):
+            in_drive_only.append([title_by_id.get(fid, fid),
+                                  "موجود في Drive وغير مرتبط برابط في الدراسة (مبدئياً)",
                                   TAG_SCRIPT, TAG_NEEDS_REVIEW])
+    elif study_text:
+        # احتياط: مقارنة تقريبية بالعناوين عند غياب الروابط
+        drive_titles_norm = {normalize_arabic(r.get("title", "")): r.get("title") for r in files}
+        idx = [ln.strip() for ln in study_text.splitlines()
+               if 6 < len(ln.strip()) < 160 and any(k in ln for k in
+               ["مرفق", "صك", "عقد", "حكم", "تقرير", "وكالة", "مذكرة", "محضر", "شكوى"])]
+        for s in idx:
+            sn = normalize_arabic(s)
+            matched = next((d for dn, d in drive_titles_norm.items()
+                            if sn.split() and dn.split()
+                            and len(set(sn.split()) & set(dn.split())) / len(set(sn.split()) | set(dn.split())) >= 0.45), None)
+            (in_both if matched else in_study_only).append(
+                [s, matched or "غير موجود (تقريبي)", TAG_SCRIPT, TAG_NEEDS_REVIEW])
+
+    # خلاصة الدراسة الذاتية (كما وردت نصاً في الدراسة) لإدراجها في التقرير
+    study_summary_lines = []
+    for ln in study_text.splitlines():
+        s = ln.strip()
+        if any(k in s for k in ["خلاصة الفهرس", "بنداً", "بنود الدراسة",
+                                "لم تذكرها", "غير موجودة في الدرايف", "192 ملفاً"]) and 10 < len(s) < 400:
+            study_summary_lines.append(s)
 
     # ----------------------------------------------------------------------
     # كتابة CSV
@@ -1020,12 +1067,22 @@ def main():
     for row in central_rows[:20]:
         md.append(f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} |")
     md.append("")
+    if study_summary_lines:
+        md.append("## 8-أ) خلاصة المطابقة كما وردت نصاً في الدراسة")
+        md.append(f"عدد روابط ملفات الدراسة: **{len(study_file_ids)}** — "
+                  f"المُحمّل آلياً منها: **{len(in_both)}**؛ "
+                  f"مذكور برابط وتعذّر تحميله: **{len(in_study_only)}**؛ "
+                  f"موجود في Drive دون رابط في الدراسة: **{len(in_drive_only)}**.")
+        md.append("")
+        for s in study_summary_lines[:8]:
+            md.append(f"> {s}")
+        md.append("")
     md.append("## 9) المستندات المذكورة في الدراسة وغير الموجودة")
     if study_text:
         for row in in_study_only[:50]:
-            md.append(f"- {row[0]}")
+            md.append(f"- {row[0]} — {row[1]}")
         if not in_study_only:
-            md.append("- لا يوجد (أو لم تُكتشف فروقات).")
+            md.append("- لا يوجد فرق بالمعرّفات: كل ملف ربطته الدراسة تم تحميله آلياً.")
     else:
         md.append("- **لم يُعثر على نص الدراسة** في `staging/study/`؛ لذلك لم تُجرَ مقارنة الفهرس. "
                   "يلزم تزويد ملف الدراسة لإتمام هذه المقارنة.")
