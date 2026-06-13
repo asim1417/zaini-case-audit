@@ -1,0 +1,22 @@
+2026-06-13 18:02:09,185 [INFO] === بدء تشغيل الفحص الآلي [مخرج آلي / Script Output - سماوي] ===
+2026-06-13 18:02:09,185 [INFO] الوضع: بيانات مرحّلة --staging=zaini_case_audit_output/staging
+2026-06-13 18:02:09,190 [INFO] حُمِّل 43 سجل من zaini_case_audit_output/staging/parts
+2026-06-13 18:02:09,191 [WARNING] مكتبات ناقصة: pytesseract+Pillow (OCR) (انظر /home/user/zaini-case-audit/zaini_case_audit_output/logs/dependencies_missing.md)
+2026-06-13 18:02:19,191 [INFO] === بدء تشغيل الفحص الآلي [مخرج آلي / Script Output - سماوي] ===
+2026-06-13 18:02:19,192 [INFO] الوضع: بيانات مرحّلة --staging=zaini_case_audit_output/staging
+2026-06-13 18:02:19,197 [INFO] حُمِّل 43 سجل من zaini_case_audit_output/staging/parts
+2026-06-13 18:02:19,197 [WARNING] مكتبات ناقصة: pytesseract+Pillow (OCR) (انظر /home/user/zaini-case-audit/zaini_case_audit_output/logs/dependencies_missing.md)
+2026-06-13 18:02:19,702 [INFO] اكتمل الفحص. الملفات: 35، مقروء: 35، غير مقروء: 0، يحتاج OCR: 0
+2026-06-13 18:02:19,702 [INFO] === انتهى التشغيل ===
+2026-06-13 18:03:17,767 [INFO] === بدء تشغيل الفحص الآلي [مخرج آلي / Script Output - سماوي] ===
+2026-06-13 18:03:17,767 [INFO] الوضع: بيانات مرحّلة --staging=zaini_case_audit_output/staging
+2026-06-13 18:03:17,772 [INFO] حُمِّل 43 سجل من zaini_case_audit_output/staging/parts
+2026-06-13 18:03:17,773 [WARNING] مكتبات ناقصة: pytesseract+Pillow (OCR) (انظر /home/user/zaini-case-audit/zaini_case_audit_output/logs/dependencies_missing.md)
+2026-06-13 18:03:18,297 [INFO] اكتمل الفحص. الملفات: 35، مقروء: 35، غير مقروء: 0، يحتاج OCR: 0
+2026-06-13 18:03:18,297 [INFO] === انتهى التشغيل ===
+2026-06-13 18:04:22,068 [INFO] === بدء تشغيل الفحص الآلي [مخرج آلي / Script Output - سماوي] ===
+2026-06-13 18:04:22,068 [INFO] الوضع: بيانات مرحّلة --staging=zaini_case_audit_output/staging
+2026-06-13 18:04:22,073 [INFO] حُمِّل 43 سجل من zaini_case_audit_output/staging/parts
+2026-06-13 18:04:22,074 [WARNING] مكتبات ناقصة: pytesseract+Pillow (OCR) (انظر /home/user/zaini-case-audit/zaini_case_audit_output/logs/dependencies_missing.md)
+2026-06-13 18:04:22,595 [INFO] اكتمل الفحص. الملفات: 35، مقروء: 35، غير مقروء: 0، يحتاج OCR: 0
+2026-06-13 18:04:22,595 [INFO] === انتهى التشغيل ===
