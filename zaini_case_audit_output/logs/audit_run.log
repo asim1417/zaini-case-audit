@@ -44,3 +44,9 @@
 2026-06-13 21:50:54,629 [WARNING] مكتبات ناقصة: pytesseract+Pillow (OCR) (انظر /home/user/zaini-case-audit/zaini_case_audit_output/logs/dependencies_missing.md)
 2026-06-13 21:50:56,397 [INFO] اكتمل الفحص. الملفات: 192، مقروء: 134، غير مقروء: 58، يحتاج OCR: 58
 2026-06-13 21:50:56,397 [INFO] === انتهى التشغيل ===
+2026-06-13 22:16:20,675 [INFO] === بدء تشغيل الفحص الآلي [مخرج آلي / Script Output - سماوي] ===
+2026-06-13 22:16:20,676 [INFO] الوضع: بيانات مرحّلة --staging=zaini_case_audit_output/staging
+2026-06-13 22:16:20,700 [INFO] حُمِّل 192 سجل من zaini_case_audit_output/staging/parts_clean
+2026-06-13 22:16:20,700 [WARNING] مكتبات ناقصة: pytesseract+Pillow (OCR) (انظر /home/user/zaini-case-audit/zaini_case_audit_output/logs/dependencies_missing.md)
+2026-06-13 22:16:22,850 [INFO] اكتمل الفحص. الملفات: 192، مقروء: 166، غير مقروء: 26، يحتاج OCR: 26
+2026-06-13 22:16:22,850 [INFO] === انتهى التشغيل ===
