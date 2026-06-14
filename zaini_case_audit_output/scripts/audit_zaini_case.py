@@ -274,13 +274,24 @@ def extract_entities(raw_text):
     ents["hijri_dates"] = sorted(set(m.group(0).strip() for m in RE_HIJRI.finditer(norm)))
     ents["greg_dates"] = sorted(set(m.group(0).strip() for m in RE_GREG.finditer(norm)))
 
-    # المبالغ
-    amounts = set()
+    # المبالغ (مع توحيد الصيغة وإزالة التكرار والضجيج)
+    raw_amounts = []
     for m in RE_AMOUNT.finditer(norm):
-        amounts.add(m.group(1).strip(".,٬"))
+        raw_amounts.append((m.group(1), m.group(0)))
     for m in RE_AMOUNT2.finditer(norm):
-        amounts.add(m.group(1).strip(".,٬"))
-    ents["amounts"] = sorted(amounts, key=lambda x: len(x), reverse=True)
+        raw_amounts.append((m.group(1), m.group(0)))
+    canon = {}
+    for num, ctx in raw_amounts:
+        digits = re.sub(r"[^\d]", "", num)
+        has_mag = bool(re.search(r"(مليون|ملايين|الف|آلاف|مليار)", norm[max(0, norm.find(ctx)):norm.find(ctx) + len(ctx) + 12])) if ctx in norm else False
+        # تجاهل الأرقام الصغيرة جداً ما لم تُرفق بوحدة (مليون/ألف)
+        if len(digits) < 4 and not has_mag:
+            continue
+        if len(digits) > 13:  # أرقام شاذة (غالباً التصاق OCR) - تُستبعد
+            continue
+        disp = format(int(digits), ",") if digits else num
+        canon[digits] = disp
+    ents["amounts"] = [canon[k] for k in sorted(canon, key=lambda d: int(d), reverse=True)]
 
     # المحاكم
     for label, pats in COURTS.items():
