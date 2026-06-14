@@ -32,6 +32,21 @@ def ocr_image(path):
         return f"[OCR error: {e}]"
 
 
+def ocr_pdf(path, max_pages=40):
+    """OCR لملف PDF صورة (بلا طبقة نص) عبر تحويل الصفحات إلى صور ثم tesseract."""
+    try:
+        import pytesseract
+        from pdf2image import convert_from_path
+        pages = convert_from_path(str(path), dpi=200)
+        out = []
+        for i, pg in enumerate(pages[:max_pages], 1):
+            out.append(f"[صفحة {i} - OCR]")
+            out.append(pytesseract.image_to_string(pg, lang="ara+eng"))
+        return "\n".join(out)
+    except Exception as e:  # noqa
+        return f"[PDF OCR error: {e}]"
+
+
 def read_inner(path):
     ext = path.suffix.lower()
     try:
@@ -55,8 +70,8 @@ def read_inner(path):
             import pypdf
             r = pypdf.PdfReader(str(path))
             txt = "\n".join((pg.extract_text() or "") for pg in r.pages)
-            if len(txt.strip()) < 20:  # ربما PDF صورة → OCR لكل صفحة غير متاح بسهولة
-                return txt + "\n[نص ضئيل - قد يكون PDF صورة يحتاج OCR]"
+            if len(txt.strip()) < 20:  # PDF صورة → OCR للصفحات
+                return ocr_pdf(path)
             return txt
         if ext in IMG_EXT:
             return ocr_image(path)
