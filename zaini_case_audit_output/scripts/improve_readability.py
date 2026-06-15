@@ -53,8 +53,29 @@ def reverse_line(norm_line):
     return rev
 
 
+ARLET = re.compile(r"[؀-ۿ]")
+
+
+def collapse_doubling(line):
+    """يعالج تكرار OCR المزدوج للكلمات العربية فقط (يتجنّب الأرقام والجداول):
+       «كلمة كلمة» ⇐ «كلمة»، و«نصنص» (تضعيف داخل الكلمة) ⇐ «نص»."""
+    toks = line.split(" ")
+    out = []
+    for t in toks:
+        n = len(t)
+        is_ar = bool(ARLET.search(t)) and not any(ch.isdigit() for ch in t)
+        # تضعيف داخل الرمز (النصف الأول = النصف الثاني) — للكلمات العربية فقط
+        if is_ar and n >= 6 and n % 2 == 0 and t[:n // 2] == t[n // 2:]:
+            t = t[:n // 2]
+        # تكرار متجاور مطابق — للكلمات العربية ذات طول معقول فقط
+        if out and out[-1] == t and is_ar and len(t) >= 3:
+            continue
+        out.append(t)
+    return " ".join(out)
+
+
 def process_text(raw):
-    """يختار لكل سطر الاتجاه الأعلى «معقولية» وفق القاموس؛ ويعكس الممسوح (PF) دائماً."""
+    """يختار لكل سطر الاتجاه الأعلى «معقولية»، ثم يزيل تضعيف OCR للكلمات العربية."""
     out = []
     fixed_any = False
     for line in raw.split("\n"):
@@ -64,12 +85,13 @@ def process_text(raw):
         norm = unicodedata.normalize("NFKC", line)
         rev = reverse_line(norm)
         sf, sr = line_score(norm), line_score(rev)
-        # اعكس فقط إذا كان الاتجاه المعكوس أعلى «معقولية» فعلاً (القاموس يقرّر)
+        chosen = rev if sr > sf else norm
         if sr > sf:
-            out.append(rev)
             fixed_any = True
-        else:
-            out.append(norm)
+        new = collapse_doubling(chosen)
+        if new != chosen:
+            fixed_any = True
+        out.append(new)
     return "\n".join(out), fixed_any
 
 
