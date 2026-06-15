@@ -27,8 +27,11 @@ python3 scripts/audit_zaini_case.py --root /path/to/local/folder
 - `outputs/excel/` `outputs/csv/` `outputs/json/` `outputs/markdown/` — المخرجات.
 - `outputs/word/` — **نسخ Word (.docx) قابلة للتعديل وسهلة القراءة (عربية RTL):**
   التقارير الأربعة + مستند الجداول الرئيسية (`10_all_key_tables.docx`) + مستند موحّد
-  بكل النصوص المستخرجة (`11_extracted_documents_text.docx`، 181 مستنداً). تُولَّد عبر
-  `python3 scripts/make_word.py --staging staging`.
+  بكل النصوص المستخرجة (`11_extracted_documents_text.docx`، 181 مستنداً)، إضافةً إلى
+  `outputs/word/documents/` (ملف Word مستقل بالنص الكامل لكل مستند، 179 ملفاً، دون قصّ).
+- `outputs/excel/00_master_documents.xlsx` — **الفهرس الرئيسي**: صف لكل مستند
+  (رابط Drive + رابط ملف Word للنص الكامل + التاريخ + القسم + النوع + ملخّص آلي +
+  مقتطف النص). أفضل نقطة انطلاق للمراجعة.
 - `logs/` — سجل التشغيل والتبعيات الناقصة.
 - `unreadable/` — قائمة الملفات غير المقروءة/التي تحتاج OCR (دون نقل الأصول).
 
