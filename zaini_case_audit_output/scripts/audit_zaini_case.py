@@ -111,6 +111,43 @@ OTHER_ACTORS = {
 # الشركة محل النزاع
 COMPANY_PATTERNS = ["شركة احمد زيني التجارية", "احمد زيني التجارية"]
 
+# ---------------------------------------------------------------------------
+# تحميل إعداد القضية من ملف خارجي (case_config.json) — لجعل النظام عاماً لأي قضية
+# إن وُجد الملف، يَستبدل الثوابت أعلاه. وإلا تبقى قيم قضية زيني الافتراضية.
+# يُبحث عنه في: متغيّر البيئة CASE_CONFIG، أو جذر المخرجات، أو staging/.
+# ---------------------------------------------------------------------------
+CASE_TITLE = "قضية زيني 42824717"
+CASE_FOLDER_NAME = "مستندات قضية 42824717"
+
+
+def _load_case_config():
+    global CASE_NUMBERS_KNOWN, DEED_NUMBERS_KNOWN, PARTIES, OTHER_ACTORS
+    global COMPANY_PATTERNS, COURTS, CASE_TITLE, CASE_FOLDER_NAME
+    candidates = []
+    env = os.environ.get("CASE_CONFIG")
+    if env:
+        candidates.append(Path(env))
+    candidates += [OUTPUT_ROOT / "case_config.json",
+                   DEFAULT_STAGING / "case_config.json"]
+    for c in candidates:
+        if c and c.exists():
+            try:
+                cfg = json.loads(c.read_text(encoding="utf-8"))
+            except Exception:  # noqa
+                continue
+            case = cfg.get("case", {})
+            CASE_TITLE = case.get("title", CASE_TITLE)
+            CASE_FOLDER_NAME = case.get("case_folder_name", CASE_FOLDER_NAME)
+            if case.get("number"):
+                CASE_NUMBERS_KNOWN = [case["number"]] + case.get("other_numbers", [])
+            DEED_NUMBERS_KNOWN = cfg.get("deed_numbers_known", DEED_NUMBERS_KNOWN)
+            PARTIES = cfg.get("parties", PARTIES)
+            OTHER_ACTORS = cfg.get("other_actors", OTHER_ACTORS)
+            COMPANY_PATTERNS = cfg.get("company_patterns", COMPANY_PATTERNS)
+            COURTS = cfg.get("courts", COURTS)
+            return str(c)
+    return None
+
 # المحاكم والدوائر
 COURTS = {
     "المحكمة التجارية بجدة": ["المحكمة التجارية بجدة", "المحكمة التجارية"],
@@ -128,6 +165,9 @@ LAW_NAME_KEYWORDS = [
     "نظام المرافعات", "اللائحة التنفيذية", "نظام الاثبات", "نظام الإثبات",
     "نظام التنفيذ", "النظام الاساسي للحكم", "نظام القضاء",
 ]
+
+# طبّق إعداد القضية الخارجي (بعد تعريف كل الثوابت القابلة للاستبدال)
+CASE_CONFIG_PATH = _load_case_config()
 
 # ---------------------------------------------------------------------------
 # تصنيف نوع المستند (مبدئي) حسب كلمات في الاسم/النص
@@ -576,7 +616,7 @@ def main():
     ap = argparse.ArgumentParser(description="فحص آلي لمستندات قضية زيني 42824717")
     ap.add_argument("--staging", help="مسار مجلد staging (وضع البيانات المرحّلة من Drive)")
     ap.add_argument("--root", help="مسار مجلد محلي للمشي عليه recursively")
-    ap.add_argument("--case-folder-name", default="مستندات قضية 42824717",
+    ap.add_argument("--case-folder-name", default=CASE_FOLDER_NAME,
                     help="اسم مجلد القضية كما في Drive")
     args = ap.parse_args()
 
