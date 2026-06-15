@@ -36,6 +36,8 @@ DATE_IN_TITLE = re.compile(r"(\d{1,2}[-/]\d{1,2}[-/]\d{3,4}|\d{3,4}[-/]\d{1,2}[-
 def safe_name(s):
     s = re.sub(r"[\\/:*?\"<>|\n\r\t]", "_", s or "")
     s = re.sub(r"\s+", " ", s).strip()
+    # احذف الامتداد الأصلي إن وُجد لتفادي الامتداد المزدوج (مثل .pdf.docx)
+    s = re.sub(r"\.(pdf|docx?|xlsx?|jpe?g|png|rar|zip|txt)$", "", s, flags=re.I).strip()
     return s[:80]
 
 
