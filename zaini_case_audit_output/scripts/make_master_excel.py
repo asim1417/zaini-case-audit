@@ -124,7 +124,7 @@ def main():
 
     headers = ["#", "العنوان", "إتاحة الرابط", "رابط Drive", "ملف Word للنص الكامل",
                "التاريخ", "القسم", "نوع المستند", "قابل للقراءة؟", "مصدر النص",
-               "عدد الأحرف", "ملخّص آلي (يحتاج مراجعة)", "النص الكامل (مقروء)", "وسم"]
+               "عدد الأحرف", "ملخّص آلي (يحتاج مراجعة)", "وسم"]
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -151,16 +151,13 @@ def main():
         src = "OCR مُصحَّح" if f["id"] in fixed_ids else ("منطقي" if text else "—")
         readable = "نعم" if f.get("readable") else "لا (يحتاج OCR/فك ضغط/غير متاح)"
         summary = make_summary(f, text)
-        truncated = len(text) > CELL_MAX
-        full = text if not truncated else (text[:CELL_MAX] +
-               f"\n\n[...تابِع النص الكامل في ملف Word المرفق بهذا الصف]")
         n += 1
         # ملف Word مستقل بالنص الكامل (لا قصّ) — يُنشأ فقط للملفات المقروءة
         word_rel = write_doc_word(n, f, text, fixed_ids) if text else ""
         avail = availability(f)
         row = [n, f.get("title", ""), avail, f.get("viewUrl", ""), word_rel, date,
                f.get("parent_path", ""), f.get("doc_type", ""), readable, src,
-               f.get("text_chars", len(text)), summary, full, TAG_S]
+               f.get("text_chars", len(text)), summary, TAG_S]
         ws.append(row)
         # تنسيق صف
         r = ws.max_row
@@ -172,6 +169,7 @@ def main():
             acell.font = Font(color="BF8F00")
         link_cell = ws.cell(r, 4)
         if f.get("viewUrl") and not avail.startswith("⚠️"):
+            link_cell.value = "🔗 فتح في Drive"
             link_cell.hyperlink = f["viewUrl"]
             link_cell.font = Font(color="0563C1", underline="single")
         elif avail.startswith("⚠️"):
@@ -180,15 +178,15 @@ def main():
         wcell = ws.cell(r, 5)
         if word_rel:
             wcell.hyperlink = "../" + word_rel  # رابط نسبي من مجلد excel إلى word
-            wcell.value = word_rel.split("/")[-1]
-            wcell.font = Font(color="0563C1", underline="single")
-        for col in (2, 3, 7, 12, 13):
+            wcell.value = "📄 فتح المستند (Word)"
+            wcell.font = Font(color="0563C1", underline="single", bold=True)
+        for col in (2, 3, 7, 12):
             ws.cell(r, col).alignment = Alignment(wrap_text=True, vertical="top", horizontal="right")
         csv_rows.append([n, f.get("title", ""), avail, f.get("viewUrl", ""), word_rel, date,
                          f.get("parent_path", ""), f.get("doc_type", ""), readable, src,
-                         f.get("text_chars", len(text)), summary, text[:8000], TAG_S])
+                         f.get("text_chars", len(text)), summary, TAG_S])
 
-    widths = [5, 38, 26, 26, 32, 13, 22, 14, 20, 11, 10, 52, 70, 18]
+    widths = [5, 44, 26, 18, 22, 13, 24, 15, 22, 12, 10, 65, 18]
     for i, w in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
@@ -196,7 +194,7 @@ def main():
 
     with open(OUT_CSV / "00_master_documents.csv", "w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(headers[:12] + ["النص (أول 8000 حرف)", "وسم"])
+        w.writerow(headers)
         w.writerows(csv_rows)
 
     nword = len(list(DOCS_DIR.glob("*.docx")))
