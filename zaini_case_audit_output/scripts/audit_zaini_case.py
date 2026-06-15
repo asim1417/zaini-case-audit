@@ -447,10 +447,15 @@ def load_from_staging(staging_dir, logger):
                     rec["parent_path"] = folder_map[pp]
                 elif (not pp or pp == rec.get("parentId")) and rec.get("parentId") in folder_map:
                     rec["parent_path"] = folder_map[rec.get("parentId")]
-                # حمّل النص إن وُجد
+                # حمّل النص إن وُجد (يُفضَّل النص المقروء المُصحَّح الترتيب إن توفّر)
                 rec["_text"] = ""
+                readable_dir = Path(staging_dir) / "text_readable"
+                rid2 = rec.get("id")
+                read_cand = (readable_dir / f"{rid2}.txt") if rid2 else None
                 tf = rec.get("text_file")
-                if tf and Path(tf).exists():
+                if read_cand and read_cand.exists():
+                    rec["_text"] = read_cand.read_text(encoding="utf-8", errors="replace")
+                elif tf and Path(tf).exists():
                     try:
                         rec["_text"] = Path(tf).read_text(encoding="utf-8", errors="replace")
                     except Exception as e:  # noqa

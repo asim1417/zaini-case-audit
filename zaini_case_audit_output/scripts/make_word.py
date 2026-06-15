@@ -178,6 +178,7 @@ def build_full_text_doc(staging):
     data = json.loads((OUT_JSON / "full_audit_data.json").read_text(encoding="utf-8"))
     files = data["files"]
     tdir = Path(staging) / "text"
+    rdir = Path(staging) / "text_readable"  # النص المُصحَّح الترتيب إن توفّر
     # رتّب حسب القسم ثم ترتيب الدراسة
     files.sort(key=lambda f: (f.get("parent_path", ""), f.get("title", "")))
     doc = Document()
@@ -187,10 +188,15 @@ def build_full_text_doc(staging):
     add_para_rtl(doc, "تجميع آلي لنصوص المستندات المقروءة. النصوص الممسوحة ضوئياً (OCR) "
                       "قد يكون ترتيبها بصرياً ويصعب قراءتها؛ موسومة بذلك. تحتاج مراجعة.",
                  italic=True)
+    fixed_ids = set()
+    fx = rdir / "_fixed_ids.json"
+    if fx.exists():
+        fixed_ids = set(json.loads(fx.read_text(encoding="utf-8")))
     cur_section = None
     n = 0
     for f in files:
-        p = tdir / f"{f['id']}.txt"
+        rp = rdir / f"{f['id']}.txt"
+        p = rp if rp.exists() else (tdir / f"{f['id']}.txt")
         if not p.exists():
             continue
         sec = f.get("parent_path", "") or "—"
@@ -201,8 +207,9 @@ def build_full_text_doc(staging):
         meta = f"النوع: {f.get('doc_type','')} | اتجاه النص: {f.get('orientation','')} | الرابط: {f.get('viewUrl','')}"
         add_para_rtl(doc, meta, italic=True, color=RGBColor(0x55, 0x55, 0x55))
         txt = p.read_text(encoding="utf-8", errors="replace")
-        if f.get("orientation") == "visual/OCR-reversed":
-            add_para_rtl(doc, "[ملاحظة: نص ممسوح OCR بترتيب بصري — قد يصعب قراءته ويحتاج تدقيقاً]",
+        if f["id"] in fixed_ids:
+            add_para_rtl(doc, "[ملاحظة: نص ممسوح ضوئياً (OCR) صُحِّح ترتيبه آلياً ليصبح مقروءاً — "
+                              "قد يحتوي أخطاء OCR طفيفة ويحتاج تدقيقاً]",
                          italic=True, color=RGBColor(0xC0, 0x00, 0x00))
         # قسّم النص لفقرات معقولة
         for chunk in re.split(r"\n{2,}", txt):
