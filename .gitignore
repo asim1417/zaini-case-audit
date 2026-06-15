@@ -2,3 +2,8 @@
 # حزمة المخرجات المُسلّمة (تُولَّد عند الطلب - لا تُرفع)
 zaini_case_audit_output/zaini_outputs_bundle.zip
 *.zip
+
+# مجلدات ثنائية وسيطة (تنزيلات خام / فك ضغط / إعادة OCR) - لا تُرفع
+zaini_case_audit_output/staging/raw/
+zaini_case_audit_output/staging/extracted/
+zaini_case_audit_output/staging/reocr/
