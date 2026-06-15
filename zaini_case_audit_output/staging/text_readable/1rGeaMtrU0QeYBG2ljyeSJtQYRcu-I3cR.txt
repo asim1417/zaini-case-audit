@@ -128,7 +128,7 @@
 
 في حال ال يوجد ماسح ضوئي يفضل استخدام تطبيقات مساعدة لمسح المرفقات .
 
-!\
+\!
 
 يجب أن يكون المرفق ملون وعالي الوضوح وبصيغة .pdf
 
@@ -233,18 +233,18 @@
 1950@moj.gov.sa
 
 <https://new.najiz.sa/applications/dashboard>
-</#https://new.najiz.sa/applications/iExecution>
+<https://new.najiz.sa/applications/iExecution#/>
 <https://new.najiz.sa/applications/iexecution/Requests>
 <https://new.najiz.sa/applications/dashboard>
 <https://new.najiz.sa/applications/lawsuit>
 <https://new.najiz.sa/applications/lawsuit/bankruptcy>
-(1#)[1#\]
-(1#)[1#\]
-(1#)[1#\]
-(1#)[1#\]
+[\#1](#1)
+[\#1](#1)
+[\#1](#1)
+[\#1](#1)
 <https://new.najiz.sa/applications/crm/list>
 <https://new.najiz.sa/applications/lawsuit/judicial-fees>
-(1#)[1#\]
+[\#1](#1)
 <https://new.najiz.sa/dashboard>
 <https://new.najiz.sa/applications/dashboard/verification-services>
 <https://new.najiz.sa/dashboard/portal-services>
@@ -253,15 +253,15 @@
 <https://new.najiz.sa/applications/dashboard>
 <https://new.najiz.sa/applications/lawsuit>
 <https://new.najiz.sa/applications/lawsuit/bankruptcy>
-(1#)[1#\]
-(1#)[1#\]
-(1#)[1#\]
-(1#)[1#\]
+[\#1](#1)
+[\#1](#1)
+[\#1](#1)
+[\#1](#1)
 <https://new.najiz.sa/applications/crm/list>
 <https://new.najiz.sa/applications/lawsuit/judicial-fees>
-(1#)[1#\]
+[\#1](#1)
 <https://new.najiz.sa/dashboard>
-(mailto:1950@moj.gov.sa)[mailto:1950@moj.gov.sa]
+[mailto:1950@moj.gov.sa](mailto:1950@moj.gov.sa)
 <tel:1950>
 <https://new.najiz.sa/about>
 <https://new.najiz.sa/applications/dashboard/faq>
@@ -269,14 +269,14 @@
 <https://new.najiz.sa/terms-conditions>
 <https://vision2030.gov.sa/ar>
 <https://www.moj.gov.sa/>
-<CfDJ8GyQMJD4wvpOv8eHR-GWJd13dZWHtU5hfzktkWpssLnE6U-I10m5IFE8o275GB5_p7IYEvYdngHnJxkQu1_LVtxjIbuoUeEWe39w0zCdFgz3Fu8KhregywLgOp1_QvVq0g=requestDecisionId?https://new.najiz.sa/applications/iexecution/Request/View/Decision>
+<https://new.najiz.sa/applications/iexecution/Request/View/Decision?requestDecisionId=CfDJ8GyQMJD4wvpOv8eHR-GWJd13dZWHtU5hfzktkWpssLnE6U-I10m5IFE8o275GB5_p7IYEvYdngHnJxkQu1_LVtxjIbuoUeEWe39w0zCdFgz3Fu8KhregywLgOp1_QvVq0g>
 <https://new.najiz.sa/applications/dashboard>
 <https://new.najiz.sa/applications/lawsuit>
 <https://new.najiz.sa/applications/lawsuit/bankruptcy>
-(1#)[1#\]
-(1#)[1#\]
-(1#)[1#\]
-(1#)[1#\]
+[\#1](#1)
+[\#1](#1)
+[\#1](#1)
+[\#1](#1)
 <https://new.najiz.sa/applications/crm/list>
 <https://new.najiz.sa/applications/lawsuit/judicial-fees>
-(1#)[1#\]
+[\#1](#1)

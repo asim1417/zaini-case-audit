@@ -8,7 +8,7 @@
 
 بيانات مقدم الطلب *\
 
-°ó
+ó°
 
 اسامة احمد عباس زيني
 
@@ -16,7 +16,7 @@
 
 رقم الحكم *\
 
-°ó
+ó°
 
 4530241622
 
@@ -26,7 +26,7 @@
 
 الخطأ في تكييف الواقعة أو وصفها وصفا سليمااخت ا ا ا ثةش كف ش كة ض ا التجارية وارد على سبيل الحصر وليس من بين اختصاص المحكمة التجارية. كما أن اختصاص المحكمة عليه وارثا أو غير وارث مما تخرج معه تلك الدعوى عن المطالبة بدين مستحق للمورث سواء كان المدعى اختصاص المحاكم العامة بالدعاوى اآلتية للقضاء رقم 47105 بتاريخ 1439هــ والمتضمن التجارية بموجب قرار معالي رئيس المجلس األعلى مورثهم فإن الدعوى تخرج من اختصاص المحكمة بتأويل طلبات المدعين واعتبرها مطالبة بقيمة حصة بالمادة16من نظام المحاكم التجارية ولما كان الحكم قام خالف الحكم قواعد االختصاص النوعي المقرر 877 / 2000 2°ó صدور الحكم من محكمة أو دائرة غير مختصة ±°ó
 
-2°ó
+ó°2
 
 4269
 
@@ -80,17 +80,17 @@
 
 غير خاضع للتكاليف القضائية ¦°ó
 
-   <https://new.najiz.sa/applications/dashboard>
-   <https://new.najiz.sa/applications/lawsuit/>
-   <https://new.najiz.sa/applications/lawsuit/cases/case-related-request/cassation-request/1879fca9-27d0-4852-bf5f-4d1d35374e29>
-   <https://new.najiz.sa/dashboard>
-   <https://new.najiz.sa/applications/dashboard/verification-services>
-   <https://new.najiz.sa/dashboard/portal-services>
-   <https://new.najiz.sa/applications/dashboard/license-guide>
-   <https://new.najiz.sa/dashboard>
-   (mailto:1950@moj.gov.sa)[mailto:1950@moj.gov.sa]
-   <tel:1950>
-   <https://new.najiz.sa/about>
-   <https://new.najiz.sa/applications/dashboard/faq>
-   <https://new.najiz.sa/privacy-policy>
-   <https://new.najiz.sa/terms-conditions>
+<https://new.najiz.sa/applications/dashboard>   
+<https://new.najiz.sa/applications/lawsuit/>   
+<https://new.najiz.sa/applications/lawsuit/cases/case-related-request/cassation-request/1879fca9-27d0-4852-bf5f-4d1d35374e29>   
+<https://new.najiz.sa/dashboard>   
+<https://new.najiz.sa/applications/dashboard/verification-services>   
+<https://new.najiz.sa/dashboard/portal-services>   
+<https://new.najiz.sa/applications/dashboard/license-guide>   
+<https://new.najiz.sa/dashboard>   
+[mailto:1950@moj.gov.sa](mailto:1950@moj.gov.sa)   
+<tel:1950>   
+<https://new.najiz.sa/about>   
+<https://new.najiz.sa/applications/dashboard/faq>   
+<https://new.najiz.sa/privacy-policy>   
+<https://new.najiz.sa/terms-conditions>   

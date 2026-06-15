@@ -1,4 +1,4 @@
-ىوكشلا ليصافت
+تفاصيل الشكوى
 
 تفاصیل الشكوى AM 11:12 ,5/30/24
 
@@ -6,7 +6,7 @@
 
 ×
 
-1/3 0=Msg&\9f052732-519d-4922-89bf-db7852e863ac=ItemID?https://tawasol.royalcourt.gov.sa/User/Requests/ComplaintRequestDetails.aspx
+https://tawasol.royalcourt.gov.sa/User/Requests/ComplaintRequestDetails.aspx?ItemID=9f052732-519d-4922-89bf-db7852e863ac\&Msg=0 1/3
 
 » تواصل » تفاصيل الشكوى
 
@@ -46,7 +46,7 @@
 
 المرفقات : اضغط هنا لتحميل المرفقات - معاينة المرفق
 
-2/3 0=Msg&\9f052732-519d-4922-89bf-db7852e863ac=ItemID?https://tawasol.royalcourt.gov.sa/User/Requests/ComplaintRequestDetails.aspx
+https://tawasol.royalcourt.gov.sa/User/Requests/ComplaintRequestDetails.aspx?ItemID=9f052732-519d-4922-89bf-db7852e863ac\&Msg=0 2/3
 
 عودة عودة
 
@@ -58,15 +58,15 @@
 
 اتصل بنا
 
-3/3 0=Msg&\9f052732-519d-4922-89bf-db7852e863ac=ItemID?https://tawasol.royalcourt.gov.sa/User/Requests/ComplaintRequestDetails.aspx
+https://tawasol.royalcourt.gov.sa/User/Requests/ComplaintRequestDetails.aspx?ItemID=9f052732-519d-4922-89bf-db7852e863ac\&Msg=0 3/3
 
 <https://tawasol.royalcourt.gov.sa/User/>
 <https://tawasol.royalcourt.gov.sa/>
 <https://tawasol.royalcourt.gov.sa/>
-<('','ctl00$lsLogoutEndUser$lvMaster$ctl00')javascript:__doPostBack>
+<javascript:__doPostBack('ctl00$lvMaster$lsLogoutEndUser$ctl00','')>
 <https://tawasol.royalcourt.gov.sa/>
-<&904fc21e-f3b5-4ae3-921d-298ff8e569ee=ItemID&att=op?https://tawasol.royalcourt.gov.sa/Handlers/RoyalCourtHandler.ashx>
-<&904fc21e-f3b5-4ae3-921d-298ff8e569ee=ItemID&inlineatt=op?https://tawasol.royalcourt.gov.sa/Handlers/RoyalCourtHandler.ashx>
+<https://tawasol.royalcourt.gov.sa/Handlers/RoyalCourtHandler.ashx?op=att&ItemID=904fc21e-f3b5-4ae3-921d-298ff8e569ee&>
+<https://tawasol.royalcourt.gov.sa/Handlers/RoyalCourtHandler.ashx?op=inlineatt&ItemID=904fc21e-f3b5-4ae3-921d-298ff8e569ee&>
 <https://tawasol.royalcourt.gov.sa/PrivacyPolicy.aspx>
 <https://tawasol.royalcourt.gov.sa/PrivacyPolicy.aspx>
 <https://tawasol.royalcourt.gov.sa/ContactUs.aspx>

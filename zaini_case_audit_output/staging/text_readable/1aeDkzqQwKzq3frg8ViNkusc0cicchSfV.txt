@@ -1,8 +1,8 @@
- ءاضقلل ىلعألا سلجملا | ةينورتكلإلا يوكشلا ةمدخ
+خدمة الشكوي الإلكترونية | المجلس الأعلى للقضاء 
 
 °ó الصفحة الرئيسية خدمة الشكوى اإللكرتونية الصفحة الرئيسية
 
-°ó
+ó°
 
 °ó شكوى جديدة
 
@@ -74,9 +74,9 @@
 
 199058
 
-°ó
+ó°
 
-305 / 1000
+1000 / 305
 
 °ó تم معالجة الطلب
 
@@ -130,7 +130,7 @@
 
 °ó الشكوى
 
-°ó
+ó°
 
 التار يخ تم معالجة الطلب
 
@@ -150,16 +150,16 @@
 
 المجلس األعلى للقضاء © عن المجلس المساعدة تواصل معنا °ó الرئيسية μ­°ó بيانايت 4⁄3¡°ó المساعدة
 
-   <https://complaints.scj.gov.sa/>
-   <https://complaints.scj.gov.sa/>
-   <https://complaints.scj.gov.sa/>
-   <https://complaints.scj.gov.sa/profile>
-   <contact#https://www.scj.gov.sa/>
-   <https://complaints.scj.gov.sa/>
-   <https://complaints.scj.gov.sa/profile>
-   <contact#https://www.scj.gov.sa/>
-   <'/'https://complaints.scj.gov.sa/>
-   <contact#https://www.scj.gov.sa/>
-   <'/'https://complaints.scj.gov.sa/>
-   <https://complaints.scj.gov.sa/>
-https:>
+<https://complaints.scj.gov.sa/>   
+<https://complaints.scj.gov.sa/>   
+<https://complaints.scj.gov.sa/>   
+<https://complaints.scj.gov.sa/profile>   
+<https://www.scj.gov.sa/#contact>   
+<https://complaints.scj.gov.sa/>   
+<https://complaints.scj.gov.sa/profile>   
+<https://www.scj.gov.sa/#contact>   
+<https://complaints.scj.gov.sa/'/'>   
+<https://www.scj.gov.sa/#contact>   
+<https://complaints.scj.gov.sa/'/'>   
+<https://complaints.scj.gov.sa/>   
+<https:

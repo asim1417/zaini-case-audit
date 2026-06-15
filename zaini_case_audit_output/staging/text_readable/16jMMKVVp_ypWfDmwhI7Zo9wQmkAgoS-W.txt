@@ -134,7 +134,7 @@
 
 طلبات اجراء بحاجة الى رد (0)
 
-2/4 _QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I...\_w7MnkTUnuxaoXwSot76\CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy=requestId?https://new.najiz.sa/applications/iexecution/Request/View
+https://new.najiz.sa/applications/iexecution/Request/View?requestId=CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy\_w7MnkTUnuxaoXwSot76\_QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I... 2/4
 
 منصة ناجز AM 9:02 ,10/3/23
 
@@ -176,7 +176,7 @@
 
 ال يوجد محاضر  المحاضر
 
-3/4 _QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I...\_w7MnkTUnuxaoXwSot76\CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy=requestId?https://new.najiz.sa/applications/iexecution/Request/View
+https://new.najiz.sa/applications/iexecution/Request/View?requestId=CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy\_w7MnkTUnuxaoXwSot76\_QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I... 3/4
 
 منصة ناجز AM 9:02 ,10/3/23
 
@@ -222,7 +222,7 @@
 
 عن
 
-© 2023
+2023 ©
 
 واألحكام
 
@@ -230,24 +230,24 @@
 
 المتكررة
 
-4/4 _QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I...\_w7MnkTUnuxaoXwSot76\CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy=requestId?https://new.najiz.sa/applications/iexecution/Request/View
+https://new.najiz.sa/applications/iexecution/Request/View?requestId=CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy\_w7MnkTUnuxaoXwSot76\_QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I... 4/4
 
 ناجز  1950
 
 1950@moj.gov.sa
 
 <https://new.najiz.sa/applications/dashboard>
-</#https://new.najiz.sa/applications/iExecution>
+<https://new.najiz.sa/applications/iExecution#/>
 <https://new.najiz.sa/applications/iexecution/Requests>
 <https://new.najiz.sa/dashboard>
 <https://new.najiz.sa/applications/dashboard/verification-services>
 <https://new.najiz.sa/dashboard/portal-services>
 <https://new.najiz.sa/applications/dashboard/license-guide>
 <https://new.najiz.sa/Account/Logout>
-<CfDJ8GyQMJD4wvpOv8eHR-GWJd22hGT35m2bEvLUBOWOP3RN2nK8DLMA9CVlvno1ULeKxz4_UyympJ7WuP-68l7tblqTVKj-m0MXteL2Q331m978-WtJqkuK5UZtjdQHChZ9dA_V5fOcQ03jSoN3XtLTqGA=id?https://new.najiz.sa/applications/iExecution/Common/ViewAttachmentUrl>
-<CfDJ8GyQMJD4wvpOv8eHR-GWJd1vHYCADx3URbZtWQqBNY7wH62AdzNVm3dgDmORDYJBOfofwROSYJ_VK_B2yqIYJYRsdK49LXrZ3zhOIqzg2RMZWP8IofgDaWTn8eUkewBTfg=requestDecisionId?https://new.najiz.sa/applications/iexecution/Request/View/Decision>
+<https://new.najiz.sa/applications/iExecution/Common/ViewAttachmentUrl?id=CfDJ8GyQMJD4wvpOv8eHR-GWJd22hGT35m2bEvLUBOWOP3RN2nK8DLMA9CVlvno1ULeKxz4_UyympJ7WuP-68l7tblqTVKj-m0MXteL2Q331m978-WtJqkuK5UZtjdQHChZ9dA_V5fOcQ03jSoN3XtLTqGA>
+<https://new.najiz.sa/applications/iexecution/Request/View/Decision?requestDecisionId=CfDJ8GyQMJD4wvpOv8eHR-GWJd1vHYCADx3URbZtWQqBNY7wH62AdzNVm3dgDmORDYJBOfofwROSYJ_VK_B2yqIYJYRsdK49LXrZ3zhOIqzg2RMZWP8IofgDaWTn8eUkewBTfg>
 <https://new.najiz.sa/dashboard>
-(mailto:1950@moj.gov.sa)[mailto:1950@moj.gov.sa]
+[mailto:1950@moj.gov.sa](mailto:1950@moj.gov.sa)
 <tel:1950>
 <https://new.najiz.sa/about>
 <https://new.najiz.sa/applications/dashboard/faq>

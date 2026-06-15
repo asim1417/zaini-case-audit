@@ -1,4 +1,4 @@
-ءاضقلل ىلعألا سلجملا :. ةينورتكلإلا ىوكشلا ةمدخ
+خدمة الشكوى الإلكترونية :. المجلس الأعلى للقضاء
 
 مرحبا أسامه بن احمد بن عباس زيين اإللكرتونية
 
@@ -102,7 +102,7 @@
 <https://complaints.scj.gov.sa/crequest/my>
 <https://complaints.scj.gov.sa/crequest/un>
 <https://complaints.scj.gov.sa/crequest/profile>
-<contact#https://www.scj.gov.sa/>
+<https://www.scj.gov.sa/#contact>
 <https://complaints.scj.gov.sa/account/logoff>
 <https://portal.scj.gov.sa/>
 <https://complaints.scj.gov.sa/crequest>
@@ -110,5 +110,5 @@
 <https://complaints.scj.gov.sa/crequest/my>
 <https://complaints.scj.gov.sa/crequest/un>
 <https://complaints.scj.gov.sa/crequest/profile>
-<contact#https://www.scj.gov.sa/>
+<https://www.scj.gov.sa/#contact>
 <https://complaints.scj.gov.sa/account/logoff>

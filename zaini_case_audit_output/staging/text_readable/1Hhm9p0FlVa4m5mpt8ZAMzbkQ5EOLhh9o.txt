@@ -15,7 +15,7 @@ Fax: 0“ 5.51.4 ‏فاكس:‎
 
 بيان القيد: المنصرف على شركة اسامة زينى الزراعية والحيوانية عن شهر يناير ‎٠14‏ 1 بواسطة مزرعةالدواجن الصفحة: ‎١‏
 
-50١4/04/67  :خيراتلا‎
+‎التاريخ:  50١4/04/67
 
 المدين الدائن رقم الحساب] اسم الحساب
 |اللتلسُشسوينن 82865 أشركة اسامه احمد زيني المنصرف على شركة اسامة زينى الزراعية
@@ -270,7 +270,7 @@ ine
 
 ل لى
 
-‎CM‏ مسبم ‎ee‏ ري إن
+نإ ير ‏ee‎ مبسم ‏CM‎
 
 
 ===== ملف داخلي: 1435/1435 fil no 12 inv 1136.pdf =====
@@ -566,7 +566,7 @@ eL0z OL 22 6968 — [Mech pie SrA? vf? ‏مي‎ Pe ‏“جلاع مهسي‎
 
 ELO7 Ob Zz 2968 - fees ‏بكم‎ rome Fe mets ery +6890 *
 
-eLoz'ol'22 LOZ ~ fees see h) ‏وميس مج مج مسب وب‎ Ce eh LOZ *
+* LOZ eh Ce ‎بو بسم جم جم سيمو‏ (h see fees ~ LOZ 22'ol'eLoz
 
 E407 0b 02 24128 ~ ARO ‏جوم‎ ee? retry ‏لصوي مسرن‎ a pee ‏قم‎ oe HEP ١
 €40Z'0L'02 22128 - |e ‏وسيم‎ (Rare oO CHD oF ‏روصل‎ oF ‏وشيم‎ EP ‏1ج‎ 029 ١
@@ -767,7 +767,7 @@ o
 
 ‎a CLOT ZL LL ELEQ [ee RD ES [Ree oO CH a very ‏مجهي بس‎ SKE ‏لاج سيك‎ 4
 -9 ELOT CL OL | SESSPHY/O- Jerson a? ‏حضتت‎ retry Rome ‏وجو‎ ste(SL) © OOOL 6“
-—sG 206210! 0988 = |] ‏كصب‎ rae Fim cry ‏لي لسرم‎ [Rare er ‏ويسم‎ *
+* ‎مسيو‏ er Rare] ‎مرسل يل‏ cry Fim rae ‎بصك‏ [| = 0988 !206210 sG—
 “P 5106:51:60 | SLZEZOHAC~ [ery sy ‏سيت‎ (Rare Whore tty TAO of? ee ‏رصي ببس‎ eT”
 - 0020 2288 - os ey rere Fe mettre ‏مووج ناج‎ ©
 ~~? €40e'Z1 20 1118 JR SED EE KP ‏عجر‎ ET CLOT ‏ل‎

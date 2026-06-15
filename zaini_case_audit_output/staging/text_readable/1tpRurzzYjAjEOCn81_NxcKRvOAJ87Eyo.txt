@@ -1,14 +1,14 @@
-ءاضقلل ىلعألا سلجملا | ةينورتكلإلا يوكشلا ةمدخ
+خدمة الشكوي الإلكترونية | المجلس الأعلى للقضاء
 
 °ó خدمة الشكوى اإللكرتونية شكوى جديدة شكوى جديدة
 
-°ó
+ó°
 
 °ó معاينة الشكوى ·°ó تفاصيل الشكوى 4⁄1­±ó نوع الشكوى °ó بيانايت
 
 تار يخ تسليم الحكم
 
-4⁄3°ó 1445/01/01
+1445/01/01 ó°3⁄4
 
 اسم العائلة
 
@@ -68,7 +68,7 @@
 
 تواصل معنا المساعدة عن المجلس المجلس األعلى للقضاء ©
 
-°ó
+ó°
 
 الطلب *\
 
@@ -81,12 +81,12 @@
 
 
 
-(1#)[1#\]
+[\#1](#1)
 <https://complaints.scj.gov.sa/>
 <https://complaints.scj.gov.sa/profile>
-<contact#https://www.scj.gov.sa/>
-<'/'https://complaints.scj.gov.sa/>
-<contact#https://www.scj.gov.sa/>
-<'/'https://complaints.scj.gov.sa/>
+<https://www.scj.gov.sa/#contact>
+<https://complaints.scj.gov.sa/'/'>
+<https://www.scj.gov.sa/#contact>
+<https://complaints.scj.gov.sa/'/'>
 <https://complaints.scj.gov.sa/>
-https://complaints>
+<https://complaints

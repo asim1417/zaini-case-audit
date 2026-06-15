@@ -1,4 +1,4 @@
-ءاضقلل ىلعألا سلجملا | ةينورتكلإلا يوكشلا ةمدخ
+خدمة الشكوي الإلكترونية | المجلس الأعلى للقضاء
 
 °ó خدمة الشكوى اإللكرتونية شكوى جديدة شكوى جديدة
 
@@ -6,7 +6,7 @@
 
 تواصل معنا المساعدة عن المجلس المجلس األعلى للقضاء ©
 
-°ó
+ó°
 
 °ó معاينة الشكوى ·°ó تفاصيل الشكوى 4⁄1­±ó نوع الشكوى °ó بيانايت
 
@@ -42,10 +42,10 @@
 <https://complaints.scj.gov.sa/>
 
 
-(1#)[1#\]
+[\#1](#1)
 
-<'/'https://complaints.scj.gov.sa/>
-<contact#https://www.scj.gov.sa/>
-<'/'https://complaints.scj.gov.sa/>
+<https://complaints.scj.gov.sa/'/'>
+<https://www.scj.gov.sa/#contact>
+<https://complaints.scj.gov.sa/'/'>
 <https://complaints.scj.gov.sa/>
-https://complaints.scj.gov.sa/>
+<https://complaints.scj.gov.sa/

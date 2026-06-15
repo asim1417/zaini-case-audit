@@ -1,8 +1,8 @@
-ءاضقلل ىلعألا سلجملا | ةينورتكلإلا يوكشلا ةمدخ
+خدمة الشكوي الإلكترونية | المجلس الأعلى للقضاء
 
 °ó الصفحة الرئيسية خدمة الشكوى اإللكرتونية الصفحة الرئيسية
 
-°ó
+ó°
 
 °ó شكوى جديدة
 
@@ -66,11 +66,11 @@
 
 183821
 
-°ó
+ó°
 
 تار يخ تسليم الحكم
 
-4⁄3°ó 1445/01/01
+1445/01/01 ó°3⁄4
 
 اسم العائلة
 
@@ -128,7 +128,7 @@
 
 تواصل معنا المساعدة عن المجلس المجلس األعلى للقضاء ©
 
-°ó
+ó°
 
 °ó سجل الطلبات
 
@@ -156,12 +156,12 @@
 <https://complaints.scj.gov.sa/>
 <https://complaints.scj.gov.sa/>
 <https://complaints.scj.gov.sa/profile>
-<contact#https://www.scj.gov.sa/>
+<https://www.scj.gov.sa/#contact>
 <https://complaints.scj.gov.sa/>
 <https://complaints.scj.gov.sa/profile>
-<contact#https://www.scj.gov.sa/>
-<'/'https://complaints.scj.gov.sa/>
-<contact#https://www.scj.gov.sa/>
-<'/'https://complaints.scj.gov.sa/>
+<https://www.scj.gov.sa/#contact>
+<https://complaints.scj.gov.sa/'/'>
+<https://www.scj.gov.sa/#contact>
+<https://complaints.scj.gov.sa/'/'>
 <https://complaints.scj.gov.sa/>
->
+<
