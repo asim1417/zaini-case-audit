@@ -94,6 +94,18 @@ def make_summary(f, text):
     return " | ".join(bits)
 
 
+def availability(f):
+    """حالة إتاحة الرابط/الملف على Drive."""
+    if f.get("readable"):
+        return "متاح ✓"
+    t = f.get("title", "") or ""
+    if re.search(r"\(zip\)|\.zip|\bzip\b|\(rar\)|\.rar|\brar\b", t, re.I):
+        return "أرشيف كبير — افتحه يدوياً من Drive (لم يُستخرج نصه آلياً)"
+    if re.search(r"صورة|\.jpg|\.jpeg|\.png", t, re.I):
+        return "صورة — افتحها من Drive"
+    return "⚠️ رابط محذوف — الملف غير موجود في Drive"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--staging", default=str(AZ.DEFAULT_STAGING))
@@ -110,9 +122,9 @@ def main():
 
     files.sort(key=lambda f: (f.get("parent_path", ""), f.get("title", "")))
 
-    headers = ["#", "العنوان", "رابط Drive", "ملف Word للنص الكامل", "التاريخ", "القسم",
-               "نوع المستند", "قابل للقراءة؟", "مصدر النص", "عدد الأحرف",
-               "ملخّص آلي (يحتاج مراجعة)", "النص الكامل (مقروء)", "وسم"]
+    headers = ["#", "العنوان", "إتاحة الرابط", "رابط Drive", "ملف Word للنص الكامل",
+               "التاريخ", "القسم", "نوع المستند", "قابل للقراءة؟", "مصدر النص",
+               "عدد الأحرف", "ملخّص آلي (يحتاج مراجعة)", "النص الكامل (مقروء)", "وسم"]
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -145,28 +157,38 @@ def main():
         n += 1
         # ملف Word مستقل بالنص الكامل (لا قصّ) — يُنشأ فقط للملفات المقروءة
         word_rel = write_doc_word(n, f, text, fixed_ids) if text else ""
-        row = [n, f.get("title", ""), f.get("viewUrl", ""), word_rel, date,
+        avail = availability(f)
+        row = [n, f.get("title", ""), avail, f.get("viewUrl", ""), word_rel, date,
                f.get("parent_path", ""), f.get("doc_type", ""), readable, src,
                f.get("text_chars", len(text)), summary, full, TAG_S]
         ws.append(row)
         # تنسيق صف
         r = ws.max_row
-        link_cell = ws.cell(r, 3)
-        if f.get("viewUrl"):
+        # عمود الإتاحة (3): لوّن المحذوف بالأحمر، الأرشيف بالبرتقالي
+        acell = ws.cell(r, 3)
+        if avail.startswith("⚠️"):
+            acell.font = Font(color="C00000", bold=True)
+        elif "أرشيف" in avail or "صورة" in avail:
+            acell.font = Font(color="BF8F00")
+        link_cell = ws.cell(r, 4)
+        if f.get("viewUrl") and not avail.startswith("⚠️"):
             link_cell.hyperlink = f["viewUrl"]
             link_cell.font = Font(color="0563C1", underline="single")
-        wcell = ws.cell(r, 4)
+        elif avail.startswith("⚠️"):
+            link_cell.value = "(رابط محذوف — لا تفتحه)"
+            link_cell.font = Font(color="C00000")
+        wcell = ws.cell(r, 5)
         if word_rel:
             wcell.hyperlink = "../" + word_rel  # رابط نسبي من مجلد excel إلى word
             wcell.value = word_rel.split("/")[-1]
             wcell.font = Font(color="0563C1", underline="single")
-        for col in (2, 6, 11, 12):
+        for col in (2, 3, 7, 12, 13):
             ws.cell(r, col).alignment = Alignment(wrap_text=True, vertical="top", horizontal="right")
-        csv_rows.append([n, f.get("title", ""), f.get("viewUrl", ""), word_rel, date,
+        csv_rows.append([n, f.get("title", ""), avail, f.get("viewUrl", ""), word_rel, date,
                          f.get("parent_path", ""), f.get("doc_type", ""), readable, src,
                          f.get("text_chars", len(text)), summary, text[:8000], TAG_S])
 
-    widths = [5, 40, 28, 34, 13, 24, 15, 22, 12, 10, 55, 80, 20]
+    widths = [5, 38, 26, 26, 32, 13, 22, 14, 20, 11, 10, 52, 70, 18]
     for i, w in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
@@ -174,7 +196,7 @@ def main():
 
     with open(OUT_CSV / "00_master_documents.csv", "w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(headers[:11] + ["النص (أول 8000 حرف)", "وسم"])
+        w.writerow(headers[:12] + ["النص (أول 8000 حرف)", "وسم"])
         w.writerows(csv_rows)
 
     nword = len(list(DOCS_DIR.glob("*.docx")))
