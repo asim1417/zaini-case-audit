@@ -25,6 +25,10 @@ python3 scripts/audit_zaini_case.py --root /path/to/local/folder
 - `staging/parts/*.jsonl` — بيانات وصفية لكل ملف/مجلد (ناتج زحف Drive).
 - `staging/text/<id>.txt` — النص المستخرج لكل ملف قابل للقراءة.
 - `outputs/excel/` `outputs/csv/` `outputs/json/` `outputs/markdown/` — المخرجات.
+- `outputs/word/` — **نسخ Word (.docx) قابلة للتعديل وسهلة القراءة (عربية RTL):**
+  التقارير الأربعة + مستند الجداول الرئيسية (`10_all_key_tables.docx`) + مستند موحّد
+  بكل النصوص المستخرجة (`11_extracted_documents_text.docx`، 181 مستنداً). تُولَّد عبر
+  `python3 scripts/make_word.py --staging staging`.
 - `logs/` — سجل التشغيل والتبعيات الناقصة.
 - `unreadable/` — قائمة الملفات غير المقروءة/التي تحتاج OCR (دون نقل الأصول).
 
