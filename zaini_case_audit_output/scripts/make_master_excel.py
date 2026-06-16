@@ -59,12 +59,24 @@ def write_doc_word(n, f, text, fixed):
         MW.add_para_rtl(doc, "[نص ممسوح OCR صُحِّح ترتيبه آلياً — قد يحتوي أخطاء طفيفة]",
                         italic=True, color=RGBColor(0xC0, 0x00, 0x00))
     doc.add_paragraph("")
-    for chunk in re.split(r"\n{2,}", text):
+    # للأحكام/الصكوك/المحاضر/المذكرات: قسّم النص إلى أقسام واضحة (ترويسة/أطراف/متن)
+    body = text
+    if f.get("doc_type") in ("حكم / صك", "محضر", "مذكرة قضائية", "صحيفة دعوى"):
+        try:
+            import format_minutes as FM
+            body = FM.structure_text(text)
+        except Exception:  # noqa
+            body = text
+    for chunk in re.split(r"\n{2,}", body):
         chunk = chunk.strip()
-        if chunk:
-            # قسّم المقاطع الطويلة جداً لفقرات بطول معقول للقراءة (دون فقد)
-            for i in range(0, len(chunk), 6000):
-                MW.add_para_rtl(doc, chunk[i:i + 6000])
+        if not chunk:
+            continue
+        # اجعل عناوين الأقسام بارزة (تبدأ بـ === أو خط فاصل)
+        if chunk.startswith("=== ") or chunk.startswith("─"):
+            MW.add_heading_rtl(doc, chunk.strip("= ─"), level=2)
+            continue
+        for i in range(0, len(chunk), 6000):
+            MW.add_para_rtl(doc, chunk[i:i + 6000])
     fname = f"{n:03d}_{safe_name(f.get('title',''))}.docx"
     doc.save(str(DOCS_DIR / fname))
     return f"word/documents/{fname}"
