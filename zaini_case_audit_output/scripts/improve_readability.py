@@ -43,8 +43,13 @@ DICT = set("""في من على إلى عن مع هذا هذه التي الذي 
 الموقر المحترم اشارة فاشارة لائحة رقابية المحاكم قضاتها الذمة ابراء الفضيلة""".split())
 
 
+# للتسجيل نستخدم الكلمات المميِّزة فقط (٣ أحرف فأكثر) لتفادي المطابقات العَرَضية
+# للكلمات القصيرة جداً (ما/مع/لا/من/في...) داخل نص معكوس مشوّش.
+_SCORE_WORDS = [w for w in DICT if len(w) >= 3]
+
+
 def line_score(s):
-    return sum(s.count(w) for w in DICT)
+    return sum(s.count(w) for w in _SCORE_WORDS)
 
 
 def fix_ltr_runs(s):
