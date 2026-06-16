@@ -61,7 +61,8 @@ def write_doc_word(n, f, text, fixed):
     doc.add_paragraph("")
     # للأحكام/الصكوك/المحاضر/المذكرات: قسّم النص إلى أقسام واضحة (ترويسة/أطراف/متن)
     body = text
-    if f.get("doc_type") in ("حكم / صك", "محضر", "مذكرة قضائية", "صحيفة دعوى"):
+    if f.get("doc_type") in ("حكم / صك", "محضر", "مذكرة قضائية", "صحيفة دعوى",
+                             "شكوى", "إخطار مطالبة", "مراسلة"):
         try:
             import format_minutes as FM
             body = FM.structure_text(text)
