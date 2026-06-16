@@ -305,7 +305,7 @@ Received Amount: SR | Total Invoice Amount : 669.75 SR IL Change : sr]
 
 ime.med.sa
 
-at we TAY ‎ةدج‏ FESS ‎ةيدوعسلا ةيبرعلا ةكليمملا‏ ell Ae Te ATS GA Se
+Se GA ATS Te Ae ell ‏المميلكة العربية السعودية‎ FESS ‏جدة‎ TAY we at
 
 O00 2 Gator
 
@@ -542,7 +542,7 @@ Ss ye)
 ن0 ل لا ‏Gr cing en oO‎
 ‎pe‏ ارقم اشمتراك ‎YeVITV4+ + S0¥E‏
 ‏١ O00AV1‎ لاوجلا مقر | ‏Ee‎
-11 ةينطولا ةيوهلا | ‏Expt‎
+‎Expt‏ | الهوية الوطنية 11
 معلومات العقار
 باسحلل يلاملا خيراتلا-
 قحتسملا ديصرلا قحتسملا غلبملا يلاحلا ديصرلا يلاحلا غلبملا ةيلاملا ةلماعملا عون تارخأتملا خيرات
@@ -560,7 +560,7 @@ Ss ye)
 ‏860.00-,SAR4 — [SARO.00 860.00-,SAR4 SARO.00‎ عفدلا عطقم | 08/04/1434 ‏Qe‎
 ‏860.00,SAR4  [860.00,SAR4 860.00,SAR4 860.00,SAR4‎ ةروتافلا عطقم | 12/03/1434 6
 ‏429.50-,SAR3 2 {SARO.00 429.50-,SAR3 SARO.00‎ عفدلا عطقم 14/11/1433 ‏Ce:‎
-‏ey‎ "'ريتاوفلل يخيراتلا لجسلا“
+“السجل التاريخي للفواتير'" ‎ey‏
 ةروتافلل ينايبلا مسرل*‏
 +الاستهلاك المفوتر
 ‎https://apps.nwc.com.sa/sp]/portal PUNT‏
@@ -709,7 +709,7 @@ hen 24/09/2014 | Ashraf Home Care Deposit
 12:06 PM
 
 ime.med.sa
-‎ب ص‏ TIWY ‎ةدج‏ 5١441 ‎ةيدوعسلا ةيبرعلا ةكلمملا‏ e BTL ee Me Va ATT Ska Ns Moe PANDY
+PANDY Moe Ns Ska ATT Va Me ee BTL e ‏المملكة العربية السعودية‎ 5١441 ‏جدة‎ TIWY ‏ص ب‎
 PO. Box 2172 Jeddah 21451, Saudi Arabia, Tel. +906 2 6509000 Fax: +966 2 6509001
 
 
@@ -1568,7 +1568,7 @@ Telephone No.: ‏رقم الهاتف:‎
 
 To be filled if Remitter is other than the Account holder ‏إذا كان المحول غير صاحب الحساب‎ bed
 
-‎روقغلادبع ةيوهلا مقر و مسألا‏ da ey ‎اراب‏ 90/589 ‎دد11١1 No.: ID & Name
+Name & ID No.: 11١1دد‎ 90/589 ‏بارا‎ ey da ‏الأسم و رقم الهوية عبدالغقور‎
 ate and Place of Issuance sts ‏تاريخ ومكان الإصدار‎ 3
 “Address : a 3 1 ‏العنوان:‎ 5
 3 ‎ةيدلاخلا يح وكزوأ ةرامع :ليفكلا فتاهو ناونع‏ No.: Telephone and Address s'Sponsor
@@ -1855,7 +1855,7 @@ a
 
 12:06 PM
 
-‏ale 50:5١ 4557 Sl Tae ANT‎ ةيدوعسلا ةيبرعلا ةكلمملا ‏2١151‎ ةدج ؟172 ب ص
+ص ب 172؟ جدة ‎2١151‏ المملكة العربية السعودية ‎ANT Tae Sl 4557 50:5١ ale‏
 
 PO, Box 212 feddah 21451, Saudi Arabia. Tel. #966 2 6309000 Fax: 966 2 630900
 
@@ -1911,7 +1911,7 @@ Pri *By: RNROMG Total
 Tim@ Printed: 25/03/2015 02:52 PM
 
 ime.med.sa
-‎ب ص‏ 11١5 ‎ةدج‏ 145١ ‎ةيدوعسلا ةيبرعلا ةكلمملا‏ هانف..0١: ‎١5د 4555 ySle Sy horde ATR
+ATR horde Sy ySle 4555 د١5‎ ..0١:فناه ‏المملكة العربية السعودية‎ 145١ ‏جدة‎ 11١5 ‏ص ب‎
 P.O. Box 21
 
 +3 feddak 21451, Saudi Arabia, Tel. +966 2 6509000 Pax: +906 2 O3000DE
@@ -2142,7 +2142,7 @@ oo or 01/10/2014 [| Roselle Home Care Deposit 10,000.00
 
 ime.med.sa
 
-‏ANT‎ 56:56 سكاف ‏ike Ge a AST‎ ةيدوعسلا ةيبرعلا ةكلمملا ؟!!هأ ةده 510 55-589
+55-589 510 هدة أه!!؟ المملكة العربية السعودية ‎AST a Ge ike‏ فاكس 56:56 ‎ANT‏
 
 PG. Box 213 Jeddah 20451, Succi Ay
 
@@ -2163,7 +2163,7 @@ ere 21/09/2014 | Ruaa Baik Home Care Deposit 10,000.00
 Printed By: OPFAAF Total: 166,039.32
 Time Printed: 09/04/2015 11:27 AM
 ime.med.sa
-‎ب ص‏ TNT ‎ةدج‏ 1١48١ ‎ةيدوعسلا ةيبرعلا ةكلمملا‏ Bile hee Te AT al Ree ENO ‎فكك‏
+‏ككف‎ ENO Ree al AT Te hee Bile ‏المملكة العربية السعودية‎ 1١48١ ‏جدة‎ TNT ‏ص ب‎
 
 PO, Box 2172 Jeddak 21451, Saudi Arabia, Pel ‏موك‎ 2 604000 Pax: +966 2 OAu9U0T
 
@@ -2233,7 +2233,7 @@ Flannect Development Est.- ‏مح‎ 14030114861 - J.C.C.: §6380 ‏ضوع‎ 
 Tel. +960 2 663 0196 / +986 2 3 5418 -Fax: +
 www pladest.com
 
-ةيدوعسلا ةيبرعلا ةلكمملا 516417 ‏+2٠ Zu‎ ديري قودنصم - 0235586 ‏abe ce‎ تيل
+ليت ‎ce abe‏ 0235586 - مصندوق يريد ‎Zu 2٠+‏ 516417 الممكلة العربية السعودية
 
 
 [صفحة 4 - OCR]
@@ -2555,7 +2555,7 @@ Home Care Deposit 10,000.00
 
 ime.med.sa
 
-‎ب ص‏ 110١7 Bae VON ‎ةيدوعسلا ةيبرعلا ةكلمملا‏ Aho TYAN WSU AVION
+AVION WSU TYAN Aho ‏المملكة العربية السعودية‎ VON Bae 110١7 ‏ص ب‎
 PO. Box 2172 Jeddah 21451, Saudi Arabia, Tel. +966 2 6509000 Fax: +966 2 6509001
 
 
@@ -2565,7 +2565,7 @@ PO. Box 2172 Jeddah 21451, Saudi Arabia, Tel. +966 2 6509000 Fax: +966 2 6509001
 
 نرجو التكرم بصرف مبلغ 60,000 ‎Shy‏ (ستون ألف ‎(Shy‏ نقداً تحت حساب
 زكرملا ىفشتسم يف (تاضرمملا) ينيز سابع دمحأ خيشلاب ةصاخلا ةيلزنملا ةياعرلا
-.هتداعس باسح ىلع غلبملا ديقو دايز مأ /ةديسلا بلط ىلع ءانب يلودلا ىبطلا
+الطبى الدولي بناء على طلب السيدة/ أم زياد وقيد المبلغ على حساب سعادته.
 
 وشكراً ‎ace‏
 يروصلا فسوي‏

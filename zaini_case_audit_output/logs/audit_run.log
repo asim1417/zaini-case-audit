@@ -110,3 +110,13 @@
 2026-06-16 12:41:16,346 [INFO] حُمِّل 192 سجل من /home/user/zaini-case-audit/zaini_case_audit_output/staging/parts_clean
 2026-06-16 12:41:19,882 [INFO] اكتمل الفحص. الملفات: 192، مقروء: 179، غير مقروء: 13، يحتاج OCR: 13
 2026-06-16 12:41:19,882 [INFO] === انتهى التشغيل ===
+2026-06-16 13:02:03,269 [INFO] === بدء تشغيل الفحص الآلي [مخرج آلي / Script Output - سماوي] ===
+2026-06-16 13:02:03,579 [INFO] الوضع: بيانات مرحّلة --staging=/home/user/zaini-case-audit/zaini_case_audit_output/staging
+2026-06-16 13:02:03,615 [INFO] حُمِّل 192 سجل من /home/user/zaini-case-audit/zaini_case_audit_output/staging/parts_clean
+2026-06-16 13:02:06,616 [INFO] اكتمل الفحص. الملفات: 192، مقروء: 179، غير مقروء: 13، يحتاج OCR: 13
+2026-06-16 13:02:06,617 [INFO] === انتهى التشغيل ===
+2026-06-16 13:04:51,258 [INFO] === بدء تشغيل الفحص الآلي [مخرج آلي / Script Output - سماوي] ===
+2026-06-16 13:04:51,567 [INFO] الوضع: بيانات مرحّلة --staging=/home/user/zaini-case-audit/zaini_case_audit_output/staging
+2026-06-16 13:04:51,602 [INFO] حُمِّل 192 سجل من /home/user/zaini-case-audit/zaini_case_audit_output/staging/parts_clean
+2026-06-16 13:04:54,580 [INFO] اكتمل الفحص. الملفات: 192، مقروء: 179، غير مقروء: 13، يحتاج OCR: 13
+2026-06-16 13:04:54,580 [INFO] === انتهى التشغيل ===
