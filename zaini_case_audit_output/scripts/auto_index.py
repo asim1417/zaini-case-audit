@@ -41,10 +41,25 @@ def _id(name):
     return "doc_" + hashlib.md5(name.encode("utf-8")).hexdigest()[:16]
 
 
+def existing_ids():
+    """المعرّفات المفهرسة مسبقاً (parts_clean + parts) لتجنّب التكرار والإلحاق فقط."""
+    ids = set()
+    for sub in ("parts_clean", "parts"):
+        d = STAGING / sub
+        if d.exists():
+            for jl in d.glob("*.jsonl"):
+                try:
+                    for line in jl.read_text(encoding="utf-8").splitlines():
+                        line = line.strip()
+                        if line:
+                            ids.add(json.loads(line).get("id"))
+                except Exception:
+                    pass
+    return ids
+
+
 def main():
-    if already_indexed() and not FORCE:
-        print("الملفات مفهرسة مسبقاً — لا حاجة للفهرسة التلقائية (استخدم --force للإجبار).")
-        return
+    have = existing_ids()
 
     def read_inner(p):
         """استخراج نص مبسّط (دون استيراد process_binaries لتفادي تنفيذه الذاتي)."""
@@ -80,8 +95,9 @@ def main():
             if not p.is_file() or p.suffix.lower() not in DOC_EXT:
                 continue
             fid = _id(p.name)
-            text = read_inner(p) if read_inner else (
-                p.read_text(encoding="utf-8", errors="replace") if p.suffix.lower() == ".txt" else "")
+            if fid in have:          # مُفهرس مسبقاً — تخطَّ (إلحاق فقط)
+                continue
+            text = read_inner(p)
             (TEXT / f"{fid}.txt").write_text(text or "", encoding="utf-8")
             ok = bool(text and len(text.strip()) >= 20)
             records.append({
@@ -94,8 +110,8 @@ def main():
                 "read_status": "ok" if ok else "empty", "read_error": None,
             })
 
-    # 2) ملفات نص جاهزة في staging/text/ لم تُفهرس
-    indexed_ids = {r["id"] for r in records}
+    # 2) ملفات نص جاهزة في staging/text/ لم تُفهرس بعد
+    indexed_ids = {r["id"] for r in records} | have
     for p in sorted(TEXT.glob("*.txt")):
         if p.name.startswith("_") or p.stem in indexed_ids:
             continue
@@ -109,11 +125,15 @@ def main():
             "text_file": str(p), "read_status": "ok" if ok else "empty", "read_error": None,
         })
 
-    out = PARTS / "auto_index.jsonl"
+    if not records:
+        print("لا ملفات جديدة لفهرستها (كل الملفات مفهرسة مسبقاً).")
+        return
+    import time
+    out = PARTS / f"auto_index_{int(time.time())}.jsonl"  # اسم فريد لكل دفعة (إلحاق آمن)
     with open(out, "w", encoding="utf-8") as f:
         for r in records:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    print(f"فُهرس تلقائياً {len(records)} ملفاً ⇐ {out}")
+    print(f"فُهرس تلقائياً {len(records)} ملفاً جديداً ⇐ {out}")
 
 
 if __name__ == "__main__":

@@ -449,9 +449,16 @@ def page_count_local(path):
 # تحميل السجلات (وضع --staging أو --root)
 # ---------------------------------------------------------------------------
 def load_from_staging(staging_dir, logger):
-    # فضّل الفهرس النظيف الموحّد إن وُجد (parts_clean)، وإلا استخدم parts
+    # ادمج الفهرس النظيف (parts_clean) مع أي ملفات لاحقة في parts/ (إضافات جديدة)،
+    # مع إزالة التكرار بالمعرّف (parts_clean له الأولوية). هذا يتيح إلحاق ملفات جديدة
+    # للقضية دون فقد الفهرس الأصلي.
     clean = Path(staging_dir) / "parts_clean"
-    parts_dir = clean if (clean.exists() and any(clean.glob("*.jsonl"))) else Path(staging_dir) / "parts"
+    parts = Path(staging_dir) / "parts"
+    jsonl_files = []
+    if clean.exists():
+        jsonl_files += sorted(clean.glob("*.jsonl"))
+    if parts.exists():
+        jsonl_files += sorted(parts.glob("*.jsonl"))
     text_dir = Path(staging_dir) / "text"
     records = []
     seen_ids = set()
@@ -463,10 +470,10 @@ def load_from_staging(staging_dir, logger):
             folder_map = json.loads(fm_path.read_text(encoding="utf-8"))
         except Exception as e:  # noqa
             logger.warning("تعذّر قراءة folder_map.json: %s", e)
-    if not parts_dir.exists():
-        logger.error("مجلد parts غير موجود: %s", parts_dir)
+    if not jsonl_files:
+        logger.error("لا توجد بيانات فهرسة في parts_clean أو parts: %s", staging_dir)
         return records
-    for jl in sorted(parts_dir.glob("*.jsonl")):
+    for jl in jsonl_files:
         with open(jl, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
@@ -507,7 +514,7 @@ def load_from_staging(staging_dir, logger):
                     if cand.exists():
                         rec["_text"] = cand.read_text(encoding="utf-8", errors="replace")
                 records.append(rec)
-    logger.info("حُمِّل %d سجل من %s", len(records), parts_dir)
+    logger.info("حُمِّل %d سجل من %d ملف فهرسة", len(records), len(jsonl_files))
     return records
 
 

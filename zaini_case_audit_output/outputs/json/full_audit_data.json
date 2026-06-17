@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-17T02:04:41.500042",
+    "generated_at": "2026-06-17T10:17:05.620539",
     "mode": "staging",
     "case_number": "42824717",
     "case_folder_name": "مستندات قضية 42824717",
     "counts": {
-      "total_records": 192,
+      "total_records": 200,
       "files": 192,
-      "folders": 0,
+      "folders": 8,
       "readable": 179,
       "unreadable": 13,
       "needs_ocr": 13
@@ -20727,5 +20727,54 @@
       ]
     }
   ],
-  "folders": []
+  "folders": [
+    {
+      "id": "1huYi1aeh7af3Je8Yp2-dpxu2ZO4uMoR4",
+      "title": "اعادة فتح الشكوى الثانية برقم 199058 ـ في 13-11-1445 ـ 21-05-2024",
+      "parent_path": "اعادة فتح الشكوى الثانية برقم 199058 ـ في 13-11-1445 ـ 21-05-2024",
+      "viewUrl": "https://drive.google.com/drive/folders/1huYi1aeh7af3Je8Yp2-dpxu2ZO4uMoR4"
+    },
+    {
+      "id": "1dJBxUfBSNi1FwQEPaPTmTiI9JnhYAcWn",
+      "title": "الاحكام الصادرة في القضية - 42824717",
+      "parent_path": "الاحكام الصادرة في القضية - 42824717",
+      "viewUrl": "https://drive.google.com/drive/folders/1dJBxUfBSNi1FwQEPaPTmTiI9JnhYAcWn"
+    },
+    {
+      "id": "1WH6uCngO7Jz841kHxrUFjGck5RbHiv-B",
+      "title": "مذكرة التماس من المحامي الشهري بتاريخ 13-07-1445- 42824717",
+      "parent_path": "مذكرة التماس من المحامي الشهري بتاريخ 13-07-1445- 42824717",
+      "viewUrl": "https://drive.google.com/drive/folders/1WH6uCngO7Jz841kHxrUFjGck5RbHiv-B"
+    },
+    {
+      "id": "1hFxpgip66uS4UfZX1Kt40pFOT3wmZzhr",
+      "title": "مرفقات خطاب شكوى وزير العدل الاولى و الثانية",
+      "parent_path": "مرفقات خطاب شكوى وزير العدل الاولى و الثانية",
+      "viewUrl": "https://drive.google.com/drive/folders/1hFxpgip66uS4UfZX1Kt40pFOT3wmZzhr"
+    },
+    {
+      "id": "1HivOtyl1MIY9CG0alFmo4aouGnupuc7h",
+      "title": "محاضر ضبط الجلسات للدعوى 42824717",
+      "parent_path": "محاضر ضبط الجلسات للدعوى 42824717",
+      "viewUrl": "https://drive.google.com/drive/folders/1HivOtyl1MIY9CG0alFmo4aouGnupuc7h"
+    },
+    {
+      "id": "1J29K-PsUrsz8eOq7vYAmFfEObRZvUoje",
+      "title": "المسحوبات",
+      "parent_path": "مرفقات مصروفات الشيخ احمد زيني وقت الحجز عليه",
+      "viewUrl": "https://drive.google.com/drive/folders/1J29K-PsUrsz8eOq7vYAmFfEObRZvUoje"
+    },
+    {
+      "id": "1bv2xjNTFbaISOpaVpkfBf-avI_jKxkcF",
+      "title": "فلة الوادي",
+      "parent_path": "مرفقات مصروفات الشيخ احمد زيني وقت الحجز عليه",
+      "viewUrl": "https://drive.google.com/drive/folders/1bv2xjNTFbaISOpaVpkfBf-avI_jKxkcF"
+    },
+    {
+      "id": "1hbFfQxzu1mAjeT68NfGpFVp8pd-aI0fP",
+      "title": "المزرعة",
+      "parent_path": "مرفقات مصروفات الشيخ احمد زيني وقت الحجز عليه",
+      "viewUrl": "https://drive.google.com/drive/folders/1hbFfQxzu1mAjeT68NfGpFVp8pd-aI0fP"
+    }
+  ]
 }
