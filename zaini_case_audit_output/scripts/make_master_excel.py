@@ -41,6 +41,65 @@ def safe_name(s):
     return s[:80]
 
 
+AUTHORITIES = [
+    "مجلس القضاء الأعلى", "المحكمة العليا", "محكمة الاستئناف", "دائرة الاستئناف",
+    "المحكمة التجارية بجدة", "المحكمة التجارية", "المحكمة العامة بجدة", "المحكمة العامة",
+    "ديوان المظالم", "كتابة العدل", "وزارة العدل", "التفتيش القضائي", "هيئة النظر",
+]
+RE_CIRCUIT = re.compile(r"(?:ال)?دائر[ةه]\s+(الاولى|الأولى|الثاني[ةه]|الثالث[ةه]|الرابع[ةه]|"
+                        r"الخامس[ةه])(?:\s+التجاري[ةه])?")
+RE_DEED = re.compile(r"(?:الصك|صك)\s*(?:رقم)?\s*[:：]?\s*(\d{6,})")
+RE_CASE = re.compile(r"(?:القضي[ةه]|قضي[ةه]|الدعوى|دعوى)\s*(?:رقم)?\s*[:：]?\s*(\d{7,})")
+
+
+RE_HIJRI_CARD = re.compile(r"1[34]\d{2}\s*[/\-]\s*\d{1,2}\s*[/\-]\s*\d{1,2}"
+                           r"|\d{1,2}\s*[/\-]\s*\d{1,2}\s*[/\-]\s*1[34]\d{2}")
+
+
+def build_card(f, text):
+    """بطاقة تعريف موحّدة: تُستخرج هوية المستند من «منطقة الترويسة» (أعلى النص)
+    لا من المتن، لتفادي التقاط أرقام/جهات/تواريخ مُشار إليها في ثنايا الحكم."""
+    e = f.get("entities", {})
+    t = text or ""
+    title = f.get("title", "") or ""
+    head = "\n".join(t.split("\n")[:18])[:1000]   # منطقة الترويسة (أعلى المستند)
+    rows = [("نوع المستند", f.get("doc_type", "") or "غير مصنف")]
+    # الجهة المصدِرة: من الترويسة أولاً (الأدقّ)، وإلا من كيانات المحاكم
+    auth = next((a for a in AUTHORITIES if a in head), "")
+    if not auth:
+        auth = next((a for a in AUTHORITIES if a in t), "") or (e.get("courts") or [""])[0]
+    if auth:
+        rows.append(("الجهة المصدِرة", auth))
+    m = RE_CIRCUIT.search(head) or RE_CIRCUIT.search(t)
+    if m:
+        rows.append(("الدائرة", "الدائرة " + m.group(1)))
+    # رقم القضية: من الكيانات، ثم من العنوان (موثوق)، ثم من الترويسة
+    title_case = re.search(r"\b\d{8}\b", title)
+    case = ((e.get("case_numbers") or [None])[0]
+            or (title_case.group(0) if title_case else "")
+            or (RE_CASE.search(head).group(1) if RE_CASE.search(head) else ""))
+    if case:
+        rows.append(("رقم القضية", case))
+    # رقم الصك/الحكم: من الترويسة (صك هذا المستند) ثم من القائمة المعروفة
+    md = RE_DEED.search(head)
+    deed = (md.group(1) if md else "") or (e.get("deed_numbers_known") or [""])[0]
+    if deed:
+        rows.append(("رقم الصك/الحكم", deed))
+    # التاريخ: يُفضَّل تاريخ العنوان (موثوق)، ثم تاريخ الترويسة
+    mt = DATE_IN_TITLE.search(title)
+    mh = RE_HIJRI_CARD.search(head)
+    date = (mt.group(1) if mt else "") or (mh.group(0) if mh else "")
+    if date:
+        rows.append(("التاريخ", date))
+    if e.get("parties"):
+        rows.append(("الأطراف", "، ".join(e["parties"])))
+    if e.get("amounts"):
+        clean = [a for a in e["amounts"] if len(re.sub(r"[^\d]", "", a)) <= 10][:3]
+        if clean:
+            rows.append(("مبالغ بارزة", "، ".join(clean) + " ريال"))
+    return rows
+
+
 def write_doc_word(n, f, text, fixed):
     """ملف Word مستقل بالنص الكامل لمستند واحد (لا قصّ)."""
     from docx import Document
@@ -48,16 +107,20 @@ def write_doc_word(n, f, text, fixed):
     doc = Document()
     MW.style_doc(doc)
     MW.add_heading_rtl(doc, f.get("title", "")[:150], level=1)
-    meta = (f"الرقم: {n} | النوع: {f.get('doc_type','')} | التاريخ: "
-            f"{DATE_IN_TITLE.search(f.get('title','') or '').group(1) if DATE_IN_TITLE.search(f.get('title','') or '') else (f.get('modifiedTime','') or '')[:10]} | "
-            f"القسم: {f.get('parent_path','')}")
-    MW.add_para_rtl(doc, meta, italic=True, color=RGBColor(0x55, 0x55, 0x55))
     MW.add_para_rtl(doc, "الرابط: " + (f.get("viewUrl", "") or ""), italic=True,
                     color=RGBColor(0x05, 0x63, 0xC1))
     MW.add_para_rtl(doc, f"{TAG_S}  {TAG_R}", italic=True)
     if f["id"] in fixed:
         MW.add_para_rtl(doc, "[نص ممسوح OCR صُحِّح ترتيبه آلياً — قد يحتوي أخطاء طفيفة]",
                         italic=True, color=RGBColor(0xC0, 0x00, 0x00))
+    # بطاقة تعريف موحّدة (تُبسّط الترويسة المختلفة الشكل لكل مستند)
+    MW.add_heading_rtl(doc, "بطاقة تعريف المستند", level=2)
+    for label, value in build_card(f, text):
+        p = doc.add_paragraph()
+        MW.set_rtl(p)
+        r1 = p.add_run(f"{label}: ")
+        r1.bold = True
+        p.add_run(MW.xml_safe(str(value)))
     doc.add_paragraph("")
     # للأحكام/الصكوك/المحاضر/المذكرات: قسّم النص إلى أقسام واضحة (ترويسة/أطراف/متن)
     body = text
@@ -136,6 +199,12 @@ def main():
         fixed_ids = set(json.loads(fx.read_text(encoding="utf-8")))
 
     files.sort(key=lambda f: (f.get("parent_path", ""), f.get("title", "")))
+    # نظّف ملفات Word القديمة لكل وثيقة قبل إعادة التوليد (تجنّب تراكم النسخ القديمة)
+    for old in DOCS_DIR.glob("*.docx"):
+        try:
+            old.unlink()
+        except Exception:
+            pass
 
     headers = ["#", "العنوان", "إتاحة الرابط", "رابط Drive", "ملف Word للنص الكامل",
                "التاريخ", "القسم", "نوع المستند", "قابل للقراءة؟", "مصدر النص",
