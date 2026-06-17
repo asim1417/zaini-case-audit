@@ -75,11 +75,17 @@ def cmd_run(name):
     if cfg.exists():
         env["CASE_CONFIG"] = str(cfg)
 
-    # تلقائياً: عالج أي ملفات ثنائية (أرشيفات/صور/PDF خام) إن وُجدت في staging/raw
+    # تلقائياً: عالج أي ملفات ثنائية (أرشيفات/صور/PDF خام) إن وُجدت في staging/raw أو docs
     raw = d / "staging" / "raw"
     if raw.exists() and any(raw.iterdir()):
         _run("معالجة الملفات الثنائية (فكّ ضغط + OCR)", ["process_binaries.py", staging], env)
-    _run("تحسين قراءة النصوص", ["improve_readability.py", staging], env)
+    # فهرسة تلقائية إن لم تكن الملفات مفهرسة
+    _run("الفهرسة التلقائية (عند الحاجة)", ["auto_index.py", staging], env)
+    # تمريرة أولى لتحسين القراءة
+    _run("تحسين قراءة النصوص (تمريرة 1)", ["improve_readability.py", staging], env)
+    # اكتشاف أسماء الأطراف تلقائياً من النص ثم تمريرة ثانية تستفيد منها
+    _run("اكتشاف أسماء الأطراف تلقائياً", ["detect_parties.py", staging], env)
+    _run("تحسين قراءة النصوص (تمريرة 2)", ["improve_readability.py", staging], env)
     study = d / "staging" / "study" / "source_study.docx"
     if study.exists():
         _run("بناء فهرس الدراسة", ["build_study_index.py", str(study), staging], env)

@@ -82,6 +82,15 @@ def _load_case_terms():
             for tok in re.findall(r"[؀-ۿ]{3,}", _norm_word(str(phrase))):
                 words.add(tok)
         break
+    # أضِف المصطلحات المكتشفة تلقائياً من النص (detect_parties) إن وُجدت
+    auto = STAGING / "auto_terms.json"
+    try:
+        if auto.exists():
+            for phrase in json.loads(auto.read_text(encoding="utf-8")):
+                for tok in re.findall(r"[؀-ۿ]{3,}", _norm_word(str(phrase))):
+                    words.add(tok)
+    except Exception:  # noqa
+        pass
     return words
 
 

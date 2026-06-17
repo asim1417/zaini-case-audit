@@ -33,7 +33,12 @@ else
   echo; echo ">> [0/8] تخطّي معالجة الملفات الثنائية (مرّر --with-binaries لتفعيلها)"
 fi
 
-echo; echo ">> [1/8] تحسين قراءة النصوص (تصحيح الاتجاه المعكوس سطراً بسطر)..."
+echo; echo ">> [0-أ] فهرسة تلقائية عند الحاجة..."
+python3 "$SC/auto_index.py" "$STAGING" || true
+
+echo; echo ">> [1/8] تحسين قراءة النصوص (تمريرة 1 + اكتشاف أسماء الأطراف + تمريرة 2)..."
+python3 "$SC/improve_readability.py" "$STAGING"
+python3 "$SC/detect_parties.py" "$STAGING" || true
 python3 "$SC/improve_readability.py" "$STAGING"
 
 echo; echo ">> [2/8] بناء فهرس المستندات الـ192 من الدراسة..."
