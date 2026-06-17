@@ -75,6 +75,10 @@ def cmd_run(name):
     if cfg.exists():
         env["CASE_CONFIG"] = str(cfg)
 
+    # تلقائياً: عالج أي ملفات ثنائية (أرشيفات/صور/PDF خام) إن وُجدت في staging/raw
+    raw = d / "staging" / "raw"
+    if raw.exists() and any(raw.iterdir()):
+        _run("معالجة الملفات الثنائية (فكّ ضغط + OCR)", ["process_binaries.py", staging], env)
     _run("تحسين قراءة النصوص", ["improve_readability.py", staging], env)
     study = d / "staging" / "study" / "source_study.docx"
     if study.exists():

@@ -12,11 +12,11 @@
 
  ةينورتكللإا تامدخلا عيمج  ققحتلا تامدخ   ثحبلل انه بتكا 3933
 
-... محا نب هماسأ / ابحرم https://new.najiz.sa/applications/iexecution/Request/View?requestId=CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy\_w7MnkTUnuxaoXwSot76\_QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I... 1/4
+1/4 _QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I...\_w7MnkTUnuxaoXwSot76\CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy=requestId?https://new.najiz.sa/applications/iexecution/Request/View مرحبا / أسامه بن احم ...
 
 ةلحرم ءاهنلاا
 
-هيلاملا ةكرحلا رشؤم
+مؤشر الحركة الماليه
 
 الدائرة تاريخ تقديم
 
@@ -34,7 +34,7 @@
 
 التنفيذ بجدة
 
-/رارق/ مكح ماكحا - يلام هدض ذفنم نم رداص رمأ تارارق و
+و قرارات أمر صادر من منفذ ضده مالي - احكام حكم /قرار/
 
 المحكمة
 
@@ -120,7 +120,7 @@
 
 في حال ال يوجد ماسح ضوئي يفضل استخدام تطبيقات مساعدة لمسح المرفقات . !\
 
-.pdf ةغيصبو حوضولا يلاعو نولم قفرملا نوكي نأ بجي
+يجب أن يكون المرفق ملون وعالي الوضوح وبصيغة .pdf
 
 .ان كان السند التنفيذي مكون من عدة صفحات تأكد من إرفاق جميع الصفحات بملف pdf واحد وبنفس الترتيب
 
@@ -132,7 +132,7 @@
 
 صيغة الملف PDF - يجب ان تكون الصورة ملونة
 
-(0) در ىلا ةجاحب ءارجا تابلط 
+ طلبات اجراء بحاجة الى رد (0)
 
 https://new.najiz.sa/applications/iexecution/Request/View?requestId=CfDJ8GyQMJD4wvpOv8eHR-GWJd1IViQ3L0YZs9DUInsFXKCy\_w7MnkTUnuxaoXwSot76\_QqMcKhm0j-pA-anKTqv4PZKLbIuKCUlN6BzYabVx-I... 2/4
 
@@ -140,7 +140,7 @@ https://new.najiz.sa/applications/iexecution/Request/View?requestId=CfDJ8GyQMJD4
 
 فارطلأا تانايب  بلطلا مدقم
 
-يلعثلا رينم نب زاوف دمحم
+محمد فواز بن منير الثعلي
 
 وكيل فرد هوية وطنية: 1098908278 عرض المزيد
 
@@ -182,13 +182,13 @@ https://new.najiz.sa/applications/iexecution/Request/View?requestId=CfDJ8GyQMJD4
 
 التقرير المالي  التقرير المالي
 
-نابيلاا
+االيبان
 
 ال يوجد بيانات مالية رقم طلب التنفيذ اسم المحكمة نوع الهوية رقم الهوية اسم المستفيد الرقم المرجعي تاريخ التحويل المبلغ
 
-ةيلاملا ةكرحلا لجس  
+  سجل الحركة المالية
 
- هعاديا مت ام يلامجا
+اجمالي ما تم ايداعه 
 
 
 

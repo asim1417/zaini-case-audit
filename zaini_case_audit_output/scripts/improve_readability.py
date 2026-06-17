@@ -43,12 +43,55 @@ DICT = set("""في من على إلى عن مع هذا هذه التي الذي 
 الموقر المحترم اشارة فاشارة لائحة رقابية المحاكم قضاتها الذمة ابراء الفضيلة""".split())
 
 
-# للتسجيل نستخدم الكلمات المميِّزة فقط (٣ أحرف فأكثر) لتفادي المطابقات العَرَضية
-# للكلمات القصيرة جداً (ما/مع/لا/من/في...) داخل نص معكوس مشوّش.
-_SCORE_WORDS = [w for w in DICT if len(w) >= 3]
+def _norm_word(w):
+    """تطبيع خفيف لتوحيد الألف/الياء/التاء المربوطة لزيادة تغطية المطابقة."""
+    w = unicodedata.normalize("NFKC", w)
+    w = re.sub("[إأآ]", "ا", w).replace("ى", "ي").replace("ة", "ه")
+    return w
+
+
+def _load_case_terms():
+    """تعلّم ذاتي: يقرأ case_config.json ويستخرج أسماء الأطراف/الوكلاء/الشركة
+    تلقائياً ويضيفها لقاموس كشف الاتجاه — فيتقوّى المحرّك لكل قضية بلا ضبط يدوي."""
+    import os
+    candidates = []
+    if os.environ.get("CASE_CONFIG"):
+        candidates.append(Path(os.environ["CASE_CONFIG"]))
+    if os.environ.get("CASE_ROOT"):
+        candidates.append(Path(os.environ["CASE_ROOT"]) / "case_config.json")
+    candidates += [STAGING.parent / "case_config.json", STAGING / "case_config.json"]
+    words = set()
+    for c in candidates:
+        try:
+            if not c.exists():
+                continue
+            cfg = json.loads(c.read_text(encoding="utf-8"))
+        except Exception:  # noqa
+            continue
+        buckets = []
+        for key in ("parties", "other_actors"):
+            d = cfg.get(key, {})
+            if isinstance(d, dict):
+                for k, v in d.items():
+                    buckets.append(k)
+                    buckets += (v if isinstance(v, list) else [])
+        buckets += cfg.get("company_patterns", []) or []
+        case = cfg.get("case", {})
+        buckets += [case.get("title", "")]
+        for phrase in buckets:
+            for tok in re.findall(r"[؀-ۿ]{3,}", _norm_word(str(phrase))):
+                words.add(tok)
+        break
+    return words
+
+
+# للتسجيل نستخدم الكلمات المميِّزة فقط (٣ أحرف فأكثر) لتفادي المطابقات العَرَضية،
+# مع إضافة مصطلحات القضية تلقائياً من الإعداد (تعلّم ذاتي لكل قضية).
+_SCORE_WORDS = list({_norm_word(w) for w in DICT if len(w) >= 3} | _load_case_terms())
 
 
 def line_score(s):
+    s = _norm_word(s)
     return sum(s.count(w) for w in _SCORE_WORDS)
 
 
