@@ -11,7 +11,7 @@ import os
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(os.environ.get("CASE_ROOT") or Path(__file__).resolve().parent.parent)
 OUT = ROOT / "zaini_outputs_bundle.zip"
 
 

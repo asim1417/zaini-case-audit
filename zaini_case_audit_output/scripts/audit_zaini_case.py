@@ -42,7 +42,9 @@ from pathlib import Path
 # المسارات الأساسية
 # ---------------------------------------------------------------------------
 SCRIPT_DIR = Path(__file__).resolve().parent
-OUTPUT_ROOT = SCRIPT_DIR.parent  # zaini_case_audit_output
+# جذر مخرجات القضية: قابل للتعميم لأي قضية عبر متغيّر البيئة CASE_ROOT
+# (إن لم يُحدَّد، يبقى السلوك الافتراضي لقضية زيني = مجلد المخرجات الأب).
+OUTPUT_ROOT = Path(os.environ.get("CASE_ROOT") or SCRIPT_DIR.parent)
 OUT_CSV = OUTPUT_ROOT / "outputs" / "csv"
 OUT_XLSX = OUTPUT_ROOT / "outputs" / "excel"
 OUT_MD = OUTPUT_ROOT / "outputs" / "markdown"
