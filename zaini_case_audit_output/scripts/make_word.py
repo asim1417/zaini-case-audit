@@ -51,8 +51,16 @@ def style_doc(doc):
     rfonts.set(qn('w:cs'), 'Arial')
 
 
+_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+
+def xml_safe(s):
+    """يزيل المحارف التحكّمية غير المتوافقة مع XML (تظهر من OCR) لتفادي أخطاء Word/Excel."""
+    return _CTRL.sub("", s) if isinstance(s, str) else s
+
+
 def add_heading_rtl(doc, text, level=1):
-    h = doc.add_heading(text, level=level)
+    h = doc.add_heading(xml_safe(text), level=level)
     set_rtl(h)
     return h
 
@@ -60,7 +68,7 @@ def add_heading_rtl(doc, text, level=1):
 def add_para_rtl(doc, text, bold=False, italic=False, color=None):
     p = doc.add_paragraph()
     set_rtl(p)
-    run = p.add_run(text)
+    run = p.add_run(xml_safe(text))
     run.bold = bold
     run.italic = italic
     if color:
@@ -92,7 +100,7 @@ def md_to_docx(md_path, docx_path, title=None):
                 cellsrow = t.add_row().cells
                 for i in range(ncol):
                     txt = r[i] if i < len(r) else ""
-                    cellsrow[i].text = txt
+                    cellsrow[i].text = xml_safe(txt)
                     for para in cellsrow[i].paragraphs:
                         set_rtl(para)
         table_buf = []
@@ -148,7 +156,7 @@ def csv_to_table(doc, csv_path, title, max_rows=400):
     for r in rows[1:max_rows + 1]:
         cells = t.add_row().cells
         for ci, i in enumerate(keep):
-            cells[ci].text = (r[i] if i < len(r) else "")[:300]
+            cells[ci].text = xml_safe((r[i] if i < len(r) else "")[:300])
             for para in cells[ci].paragraphs:
                 set_rtl(para)
     doc.add_paragraph("")

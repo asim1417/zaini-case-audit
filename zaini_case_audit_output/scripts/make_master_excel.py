@@ -165,7 +165,7 @@ def main():
         date = m.group(1) if m else (f.get("modifiedTime", "") or "")[:10]
         src = "OCR مُصحَّح" if f["id"] in fixed_ids else ("منطقي" if text else "—")
         readable = "نعم" if f.get("readable") else "لا (يحتاج OCR/فك ضغط/غير متاح)"
-        summary = make_summary(f, text)
+        summary = MW.xml_safe(make_summary(f, text))
         n += 1
         # ملف Word مستقل بالنص الكامل (لا قصّ) — يُنشأ فقط للملفات المقروءة
         word_rel = write_doc_word(n, f, text, fixed_ids) if text else ""
@@ -173,6 +173,7 @@ def main():
         row = [n, f.get("title", ""), avail, f.get("viewUrl", ""), word_rel, date,
                f.get("parent_path", ""), f.get("doc_type", ""), readable, src,
                f.get("text_chars", len(text)), summary, TAG_S]
+        row = [MW.xml_safe(x) if isinstance(x, str) else x for x in row]
         ws.append(row)
         # تنسيق صف
         r = ws.max_row
