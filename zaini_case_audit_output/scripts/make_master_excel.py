@@ -224,6 +224,7 @@ def main():
     ws.freeze_panes = "A2"
 
     csv_rows = []
+    card_rows = []   # صفوف ورقة «بطاقات التعريف»
     n = 0
     for f in files:
         rp = rdir / f"{f['id']}.txt"
@@ -239,6 +240,14 @@ def main():
         # ملف Word مستقل بالنص الكامل (لا قصّ) — يُنشأ فقط للملفات المقروءة
         word_rel = write_doc_word(n, f, text, fixed_ids) if text else ""
         avail = availability(f)
+        # صف بطاقة التعريف (لورقة منفصلة)
+        cd = dict(build_card(f, text))
+        card_rows.append([
+            n, f.get("title", ""), cd.get("نوع المستند", ""), cd.get("الجهة المصدِرة", ""),
+            cd.get("الدائرة", ""), cd.get("رقم القضية", ""), cd.get("رقم الصك/الحكم", ""),
+            cd.get("التاريخ", ""), cd.get("الأطراف", ""), cd.get("مبالغ بارزة", ""),
+            (word_rel.split("/")[-1] if word_rel else ""),
+        ])
         row = [n, f.get("title", ""), avail, f.get("viewUrl", ""), word_rel, date,
                f.get("parent_path", ""), f.get("doc_type", ""), readable, src,
                f.get("text_chars", len(text)), summary, TAG_S]
@@ -274,6 +283,28 @@ def main():
     widths = [5, 44, 26, 18, 22, 13, 24, 15, 22, 12, 10, 65, 18]
     for i, w in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
+
+    # ورقة ثانية: بطاقات التعريف (الترويسات الموحّدة لكل المستندات)
+    ws2 = wb.create_sheet("بطاقات التعريف")
+    ws2.sheet_view.rightToLeft = True
+    chead = ["#", "العنوان", "نوع المستند", "الجهة المصدِرة", "الدائرة", "رقم القضية",
+             "رقم الصك/الحكم", "التاريخ", "الأطراف", "مبالغ بارزة", "ملف Word"]
+    ws2.append(chead)
+    for c in ws2[1]:
+        c.fill = hfill
+        c.font = hfont
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws2.freeze_panes = "A2"
+    for cr in card_rows:
+        ws2.append([MW.xml_safe(x) if isinstance(x, str) else x for x in cr])
+        rr = ws2.max_row
+        wc = ws2.cell(rr, 11)
+        if wc.value:
+            wc.hyperlink = "../word/documents/" + str(wc.value)
+            wc.value = "📄 فتح"
+            wc.font = Font(color="0563C1", underline="single")
+    for col, w in zip("ABCDEFGHIJK", [5, 40, 14, 20, 14, 12, 14, 13, 34, 26, 10]):
+        ws2.column_dimensions[col].width = w
 
     wb.save(str(OUT_XLSX / "00_master_documents.xlsx"))
 
