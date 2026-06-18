@@ -18,7 +18,7 @@ import re
 from collections import defaultdict, Counter
 from pathlib import Path
 
-import audit_zaini_case as AZ  # إعادة استخدام التطبيع والتعابير النمطية
+import audit_case as AZ  # إعادة استخدام التطبيع والتعابير النمطية
 
 TAG_S = AZ.TAG_SCRIPT
 TAG_R = AZ.TAG_NEEDS_REVIEW

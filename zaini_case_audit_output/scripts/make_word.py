@@ -21,7 +21,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
-import audit_zaini_case as AZ
+import audit_case as AZ
 
 OUT_MD = AZ.OUT_MD
 OUT_CSV = AZ.OUT_CSV

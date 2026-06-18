@@ -5,14 +5,14 @@ make_bundle.py
 يبني حزمة ZIP من مجلد outputs مع ضبط علم UTF-8 لأسماء الملفات،
 حتى تظهر الأسماء العربية صحيحة عند فكّ الضغط على ويندوز.
 الاستخدام: python3 make_bundle.py
-المخرج: zaini_outputs_bundle.zip في جذر المخرجات.
+المخرج: case_outputs_bundle.zip في جذر المخرجات.
 """
 import os
 import zipfile
 from pathlib import Path
 
 ROOT = Path(os.environ.get("CASE_ROOT") or Path(__file__).resolve().parent.parent)
-OUT = ROOT / "zaini_outputs_bundle.zip"
+OUT = ROOT / "case_outputs_bundle.zip"
 
 
 def main():

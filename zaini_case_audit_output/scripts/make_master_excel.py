@@ -17,7 +17,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
-import audit_zaini_case as AZ
+import audit_case as AZ
 import make_word as MW  # لإعادة استخدام دوال Word (RTL/عناوين)
 
 OUT_XLSX = AZ.OUT_XLSX

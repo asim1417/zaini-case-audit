@@ -15,7 +15,7 @@ import csv
 import json
 from pathlib import Path
 
-import audit_zaini_case as AZ
+import audit_case as AZ
 
 STAGING = Path(sys.argv[1] if len(sys.argv) > 1 else "staging")
 RDIR = STAGING / "text_readable"

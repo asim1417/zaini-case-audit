@@ -30,7 +30,7 @@
 5) شغّل الفحص الكامل:
    `python3 scripts/legal_audit.py run قضيتي`
 
-6) سلّمني المخرجات من `cases/قضيتي/outputs/` و`cases/قضيتي/zaini_outputs_bundle.zip`:
+6) سلّمني المخرجات من `cases/قضيتي/outputs/` و`cases/قضيتي/case_outputs_bundle.zip`:
    ابدأ بالفهرس `outputs/excel/00_master_documents.xlsx` والموجز
    `outputs/word/00_ملخص_القضية.docx`.
 

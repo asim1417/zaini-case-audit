@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-audit_zaini_case.py
+audit_case.py
 ====================
 نظام فحص آلي ومنهجي لمستندات قضية زيني (الدعوى رقم 42824717).
 
@@ -16,11 +16,11 @@ audit_zaini_case.py
             <staging>/parts/*.jsonl   (بيانات وصفية لكل ملف/مجلد، سطر JSON لكل عنصر)
             <staging>/text/<id>.txt   (النص المستخرج لكل ملف قابل للقراءة)
         الاستخدام:
-            python3 audit_zaini_case.py --staging <مسار مجلد staging>
+            python3 audit_case.py --staging <مسار مجلد staging>
 
     2) وضع مجلد محلي (الوضع المتصوَّر أصلاً عند توفّر مجلد Drive محلياً/مُصدَّراً):
         يمشي على مجلد محلي recursively ويقرأ PDF/DOCX/XLSX/CSV/TXT/صور.
-            python3 audit_zaini_case.py --root <مسار مجلد محلي>
+            python3 audit_case.py --root <مسار مجلد محلي>
 
 المخرجات تُكتب جميعها داخل مجلد zaini_case_audit_output فقط.
 لا يُعدّل/يحذف/ينقل/يعيد تسمية أي ملف من المصدر.

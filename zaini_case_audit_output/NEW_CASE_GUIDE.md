@@ -26,7 +26,7 @@
    - (اختياري) `staging/raw/<id>.<ext>` لأي أرشيفات/صور (zip/rar/jpg) لمعالجتها بـ`--with-binaries`.
 
    > في بيئة هذه القضية جُمعت النصوص عبر أدوات Google Drive MCP. لأي قضية: يمكن جمعها
-   > بنفس الطريقة، أو وضع مجلد محلي وتشغيل `audit_zaini_case.py --root <مجلد>` مباشرةً.
+   > بنفس الطريقة، أو وضع مجلد محلي وتشغيل `audit_case.py --root <مجلد>` مباشرةً.
 
 2. **اكتب `case_config.json`** بمعطيات القضية (انسخ الموجود وعدّله).
 
@@ -43,7 +43,7 @@
 - `outputs/json/full_audit_data.json` — كل البيانات المهيكلة.
 
 ## القوالب العامة (مشتركة بين كل القضايا — لا تحتاج تعديلاً عادةً)
-داخل `scripts/audit_zaini_case.py` توجد قوائم عامة للقضاء السعودي يمكن تعديلها عند الحاجة
+داخل `scripts/audit_case.py` توجد قوائم عامة للقضاء السعودي يمكن تعديلها عند الحاجة
 (أو نقلها إلى `case_config.json` بمفاتيح `courts`):
 - **المحاكم/الدوائر** (`COURTS`)، **أسماء الأنظمة** (`LAW_NAME_KEYWORDS`)،
   **قواعد نوع المستند** (`DOC_TYPE_RULES`)، **قواعد تصنيف المقاطع** (`SEGMENT_RULES`)،
@@ -54,7 +54,7 @@
 |---|---|
 | `improve_readability.py` | تصحيح اتجاه النص المعكوس (سطراً بسطر، عبر القاموس) |
 | `build_study_index.py` | بناء فهرس موثوق من دراسة بروابط (اختياري) |
-| `audit_zaini_case.py` | الفحص: استخراج وتصنيف (config-driven) — يدعم `--staging` و`--root` |
+| `audit_case.py` | الفحص: استخراج وتصنيف (config-driven) — يدعم `--staging` و`--root` |
 | `analyze_case.py` | خط زمني + أسباب نقض + مبالغ + إحالات |
 | `case_brief.py` | موجز موحّد + سجل الصكوك + المحطات |
 | `process_binaries.py` | فكّ ضغط zip/rar/7z + OCR (tesseract ara+eng) |

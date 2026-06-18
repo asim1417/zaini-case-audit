@@ -49,7 +49,7 @@ else
 fi
 
 echo; echo ">> [3/8] الفحص الآلي (استخراج وتصنيف الكيانات)..."
-python3 "$SC/audit_zaini_case.py" --staging "$STAGING" 2>/dev/null | grep -E "اكتمل" || true
+python3 "$SC/audit_case.py" --staging "$STAGING" 2>/dev/null | grep -E "اكتمل" || true
 
 echo; echo ">> [4/8] التحليل (خط زمني + أسباب نقض + مبالغ + إحالات)..."
 python3 "$SC/analyze_case.py" --staging "$STAGING" 2>/dev/null | tail -1

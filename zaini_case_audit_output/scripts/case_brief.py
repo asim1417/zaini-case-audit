@@ -16,7 +16,7 @@ import json
 import re
 from pathlib import Path
 
-import audit_zaini_case as AZ
+import audit_case as AZ
 
 TAG_S = AZ.TAG_SCRIPT
 TAG_R = AZ.TAG_NEEDS_REVIEW

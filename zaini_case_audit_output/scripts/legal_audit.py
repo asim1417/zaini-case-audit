@@ -89,14 +89,14 @@ def cmd_run(name):
     study = d / "staging" / "study" / "source_study.docx"
     if study.exists():
         _run("بناء فهرس الدراسة", ["build_study_index.py", str(study), staging], env)
-    _run("الفحص الآلي", ["audit_zaini_case.py", "--staging", staging], env)
+    _run("الفحص الآلي", ["audit_case.py", "--staging", staging], env)
     _run("التحليل", ["analyze_case.py", "--staging", staging], env)
     _run("الموجز وسجل الصكوك", ["case_brief.py", "--staging", staging], env)
     _run("توليد Word", ["make_word.py", "--staging", staging], env)
     _run("الفهرس الرئيسي Excel", ["make_master_excel.py", "--staging", staging], env)
     _run("فحص الجودة", ["qc_readability.py", staging], env)
     _run("حزمة المخرجات", ["make_bundle.py"], env)
-    print(f"\nاكتمل. المخرجات في: {d}/outputs   والحزمة في: {d}/zaini_outputs_bundle.zip")
+    print(f"\nاكتمل. المخرجات في: {d}/outputs   والحزمة في: {d}/case_outputs_bundle.zip")
 
 
 def cmd_list():

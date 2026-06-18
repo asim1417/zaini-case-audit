@@ -45,7 +45,7 @@ pip install -r requirements.txt
 | legal_audit.py | الواجهة الموحّدة (new/run/list) |
 | improve_readability.py | تصحيح اتجاه النص العربي الممسوح |
 | build_study_index.py | فهرس من دراسة بروابط (اختياري) |
-| audit_zaini_case.py | الفحص: استخراج وتصنيف (يقرأ CASE_ROOT و case_config.json) |
+| audit_case.py | الفحص: استخراج وتصنيف (يقرأ CASE_ROOT و case_config.json) |
 | analyze_case.py | خط زمني + أسباب نقض + مبالغ + إحالات |
 | case_brief.py | موجز موحّد + سجل صكوك + محطات |
 | process_binaries.py | فكّ ضغط zip/rar/7z + OCR |
