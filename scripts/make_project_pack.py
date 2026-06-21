@@ -50,9 +50,9 @@ def main():
         if not t:
             row["loc"] = "صورة/بلا نص مستخرج"
             index.append(row); continue
-        key = t[:400]
+        key = t  # تطابق حرفي كامل فقط — لا نحذف إلا النسخة المطابقة 100% لتفادي فقد محتوى فريد
         if key in seen:
-            row["loc"] = "نسخة مكرّرة (نصّها في «%s»)" % seen[key]
+            row["loc"] = "نسخة مطابقة تماماً (نصّها في «%s»)" % seen[key]
             index.append(row); continue
         b = block(r)
         if sizes[-1] and sizes[-1] + len(b.encode("utf-8")) > PART_LIMIT:
