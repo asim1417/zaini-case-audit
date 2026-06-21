@@ -11,3 +11,4 @@ zaini_case_audit_output/staging/reocr/
 # Python cache
 __pycache__/
 *.pyc
+zaini_case_audit_output/outputs/json/full_documents_part*.jsonl
