@@ -14,3 +14,7 @@ __pycache__/
 
 # نسخة الواجهة المولّدة لكل قضية (الأصل المنشور في docs/)
 zaini_case_audit_output/viewer/
+
+# مخرجات التنقيح: نسخة احتياطية و PDF كبير (يُولَّد محلياً)
+zaini_case_audit_output/outputs/cleaned/_backup/
+zaini_case_audit_output/outputs/cleaned/*.pdf
