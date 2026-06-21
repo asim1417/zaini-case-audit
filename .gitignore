@@ -11,3 +11,6 @@ zaini_case_audit_output/staging/reocr/
 # Python cache
 __pycache__/
 *.pyc
+
+# نسخة الواجهة المولّدة لكل قضية (الأصل المنشور في docs/)
+zaini_case_audit_output/viewer/
