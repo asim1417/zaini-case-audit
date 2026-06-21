@@ -109,8 +109,8 @@ def main():
     (VIEWER / "case_data.js").write_text("window.CASE = " + json.dumps(data, ensure_ascii=False) + ";\n", encoding="utf-8")
 
     shell_js = json.dumps(APP_SHELL).replace("</", "<\\/")
-    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>'
-            '\n<script>if(window.CASE&&window.startApp)window.startApp();</script>')
+    # لا نستدعي startApp هنا (قد يسبق تعريفه)؛ الاستدعاء في نهاية سكربت التطبيق
+    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>')
     # نستبدل أول وسم فقط؛ الوسم الثاني داخل دالة القفل يبقى نصاً ليعمل وقت التشغيل
     index_html = APP_SHELL.replace("__BOOTSTRAP__", boot, 1)
     (VIEWER / "index.html").write_text(index_html, encoding="utf-8")
@@ -660,6 +660,7 @@ window.startApp = function(){
     }catch(e){alert('تعذّر التشفير في هذا المتصفّح.');}
   };
 };
+if(window.CASE&&window.startApp){window.startApp();}
 </script>
 </body>
 </html>
