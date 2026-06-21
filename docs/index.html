@@ -139,9 +139,10 @@
     </div>
     <div class="opt"><label><input type="checkbox" id="incText" checked> تضمين النص الكامل (إلغاؤه يصدّر البطاقات والروابط فقط)</label></div>
     <div class="acts">
-      <button id="doPrint">فتح للطباعة / حفظ PDF</button>
+      <button id="doWord">تنزيل Word</button>
+      <button id="doPrint">طباعة / PDF</button>
       <button id="doHtml" class="alt">تنزيل HTML</button>
-      <button id="doCsv" class="alt">تنزيل بطاقات CSV</button>
+      <button id="doCsv" class="alt">بطاقات CSV</button>
     </div>
   </div>
 </div>
@@ -305,6 +306,34 @@
   document.getElementById('doHtml').onclick=function(){
     var list=scopeDocs();if(!list.length){alert('لا مستندات في هذا النطاق.');return;}
     dl('مستندات_القضية_'+(C.case_number||'')+'.html',buildHTML(list,document.getElementById('incText').checked),'text/html;charset=utf-8');
+    modal.classList.remove('open');
+  };
+  function buildWord(list,incText){
+    var w=['<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">',
+      '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">',
+      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->',
+      '<style>@page{size:A4;margin:2cm}body{font-family:"Arial";font-size:12pt;direction:rtl;text-align:right}',
+      'h1{font-size:16pt}h2{font-size:13pt;margin:0 0 4pt}',
+      'table{border-collapse:collapse;margin:4pt 0}td,th{border:1px solid #999;padding:3pt 6pt;font-size:10.5pt;text-align:right}',
+      'th{background:#eef}.txt{white-space:pre-wrap;font-size:11pt;margin-top:6pt}',
+      '.brk{page-break-before:always}.note{color:#7c2d12}</style></head><body dir="rtl" lang="ar">',
+      '<h1>مستندات القضية '+esc(C.case_number||'')+' — عدد: '+list.length+'</h1>',
+      '<p class="note">مخرج آلي يحتاج مراجعة بشرية — ليس رأياً قانونياً نهائياً · وُلِّد '+esc(C.generated||'')+'</p>'];
+    list.forEach(function(d,i){
+      var card=d.card||{},kv='';
+      Object.keys(card).forEach(function(k){if(card[k])kv+='<tr><th>'+esc(k)+'</th><td>'+esc(card[k])+'</td></tr>';});
+      w.push('<div'+(i>0?' class="brk"':'')+'><h2>'+esc(d.title)+'</h2>');
+      w.push('<p style="color:#666;font-size:10pt;margin:0 0 4pt">'+esc(d.doc_type)+(d.parent_path?' · '+esc(d.parent_path):'')+'</p>');
+      if(kv)w.push('<table>'+kv+'</table>');
+      if(d.viewUrl)w.push('<p><a href="'+esc(d.viewUrl)+'">الرابط السحابي للمستند الأصلي</a></p>');
+      if(incText)w.push('<div class="txt">'+esc(d.full_text||'(لا يوجد نص مستخرج)')+'</div>');
+      w.push('</div>');
+    });
+    w.push('</body></html>');return w.join('');
+  }
+  document.getElementById('doWord').onclick=function(){
+    var list=scopeDocs();if(!list.length){alert('لا مستندات في هذا النطاق.');return;}
+    dl('مستندات_القضية_'+(C.case_number||'')+'.doc',buildWord(list,document.getElementById('incText').checked),'application/msword');
     modal.classList.remove('open');
   };
   document.getElementById('doCsv').onclick=function(){
