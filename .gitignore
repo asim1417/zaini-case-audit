@@ -7,7 +7,6 @@ zaini_case_audit_output/zaini_outputs_bundle.zip
 zaini_case_audit_output/staging/raw/
 zaini_case_audit_output/staging/extracted/
 zaini_case_audit_output/staging/reocr/
-zaini_case_audit_output/outputs/json/full_documents.jsonl
 
 # Python cache
 __pycache__/
