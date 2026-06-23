@@ -3118,5 +3118,485 @@
   "quality": "سليم",
   "needs_review": true,
   "anchor": "DOC-195"
+ },
+ {
+  "id": "DOC-196",
+  "order": 196,
+  "type": "حكم / صك",
+  "category": "الصكوك والأحكام",
+  "title": "حكم ابتدائي ضد الشيخ اسامة زيني - القضية - 42824717 - 01-01-1445 هـ.pdf",
+  "pages_est": 20,
+  "page_range": [
+   2279,
+   2298
+  ],
+  "source": "https://drive.google.com/file/d/1jYjqC1mznAUSMVpLmwzmomaDlVSpR467/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-196"
+ },
+ {
+  "id": "DOC-197",
+  "order": 197,
+  "type": "حكم / صك",
+  "category": "الصكوك والأحكام",
+  "title": "صك حكم ابتدائي رفض الالتماس لعدم الاختصاص ـ 42824717 - 01-07-1447 هـ.pdf",
+  "pages_est": 2,
+  "page_range": [
+   2299,
+   2300
+  ],
+  "source": "https://drive.google.com/file/d/1u8PIQBXWD7vyHWLXcMbzJ3i4n63H1QRF/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-197"
+ },
+ {
+  "id": "DOC-198",
+  "order": 198,
+  "type": "حكم / صك",
+  "category": "الصكوك والأحكام",
+  "title": "صك حكم نهائي ضد الشيخ اسامة زيني ـ دعوى 42824717 - 13-03-1445 هـ.pdf",
+  "pages_est": 73,
+  "page_range": [
+   2301,
+   2373
+  ],
+  "source": "https://drive.google.com/file/d/1ub0rCd1CD38iZBRYw2V5GG4Pg2hiT2c5/view?usp=drivesdk",
+  "quality": "سليم",
+  "needs_review": true,
+  "anchor": "DOC-198"
+ },
+ {
+  "id": "DOC-199",
+  "order": 199,
+  "type": "عقد / اتفاقية",
+  "category": "العقود والاتفاقيات",
+  "title": "ملخص حقوق الملكية.pdf",
+  "pages_est": 20,
+  "page_range": [
+   2374,
+   2393
+  ],
+  "source": "https://drive.google.com/file/d/1NpF7OxPSOAtOh0rGMo2WylHboEmj5J5N/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-199"
+ },
+ {
+  "id": "DOC-200",
+  "order": 200,
+  "type": "عقد / اتفاقية",
+  "category": "العقود والاتفاقيات",
+  "title": "ضبط جلسة رقم 10 يوم 07-07-1443 هـ للدعوى رقم 42824717 تمسك المدعي بالغبن و صورية العقد.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2394,
+   2396
+  ],
+  "source": "https://drive.google.com/file/d/1MOmCJpbP1JSTPNHDo7wnCpXpJCmuX3Yl/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-200"
+ },
+ {
+  "id": "DOC-201",
+  "order": 201,
+  "type": "عقد / اتفاقية",
+  "category": "العقود والاتفاقيات",
+  "title": "ضبط جلسة رقم 17 يوم 27-01-1444 هـ للدعوى رقم 42824717 طلب القاضي اصل عقد البيع.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2397,
+   2399
+  ],
+  "source": "https://drive.google.com/file/d/17gaJ8pLqaw55ceLHlYo4312Kt47vmzaz/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-201"
+ },
+ {
+  "id": "DOC-202",
+  "order": 202,
+  "type": "عقد / اتفاقية",
+  "category": "العقود والاتفاقيات",
+  "title": "ضبط جلسة رقم 16 يوم 29-12-1443 هـ للدعوى رقم 42824717 الطعن في عقد البيع وطلب اصل العقد.pdf",
+  "pages_est": 4,
+  "page_range": [
+   2400,
+   2403
+  ],
+  "source": "https://drive.google.com/file/d/1J1tKOvi55-CsxJHUL99CakmRilK10LXL/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-202"
+ },
+ {
+  "id": "DOC-203",
+  "order": 203,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 16 بتاريخ 09-11-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 6,
+  "page_range": [
+   2404,
+   2409
+  ],
+  "source": "https://drive.google.com/file/d/1Ac6bRYCL2dmkfh_v6TwzsVlcGMMOwlvJ/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-203"
+ },
+ {
+  "id": "DOC-204",
+  "order": 204,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 12 بتاريخ 19-08-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 6,
+  "page_range": [
+   2410,
+   2415
+  ],
+  "source": "https://drive.google.com/file/d/1sk4qkXLdx5ATlnEOZYERD0Mjy39JeOwH/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-204"
+ },
+ {
+  "id": "DOC-205",
+  "order": 205,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط جلسة رقم 19 يوم 22-03-1444 هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2416,
+   2418
+  ],
+  "source": "https://drive.google.com/file/d/1ynqHOzxru-xjSzRNx956ClBhtKWA1xa2/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-205"
+ },
+ {
+  "id": "DOC-206",
+  "order": 206,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط جلسة رقم 17 يوم 29-12-1443 هـ للقضية رقم 42824717.pdf",
+  "pages_est": 2,
+  "page_range": [
+   2419,
+   2420
+  ],
+  "source": "https://drive.google.com/file/d/1UZMGfPH_sD2Fk1GZtDSccB_lBmlwo5ko/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-206"
+ },
+ {
+  "id": "DOC-207",
+  "order": 207,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 1 بتاريخ 03-01-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2421,
+   2423
+  ],
+  "source": "https://drive.google.com/file/d/1yquu2X6WHiF95GawtPgtA-RTDIpc8Mcd/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-207"
+ },
+ {
+  "id": "DOC-208",
+  "order": 208,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط جلسة رقم 00 يوم 20-02-1445 هـ للقضية رقم 42824717.pdf",
+  "pages_est": 14,
+  "page_range": [
+   2424,
+   2437
+  ],
+  "source": "https://drive.google.com/file/d/1mynWTK4W3_XUslEgUFrpOkq5czgTTYQo/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-208"
+ },
+ {
+  "id": "DOC-209",
+  "order": 209,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط جلسة رقم 22 يوم 03-06-1444 هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2438,
+   2440
+  ],
+  "source": "https://drive.google.com/file/d/1Uz_CI6u1W9CLu6Z9YZ_OuvdddvOEXfTO/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-209"
+ },
+ {
+  "id": "DOC-210",
+  "order": 210,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 10 بتاريخ 07-07-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2441,
+   2443
+  ],
+  "source": "https://drive.google.com/file/d/1Bu14__JQQSF88My_C3AIpcOkLktFDf0A/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-210"
+ },
+ {
+  "id": "DOC-211",
+  "order": 211,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 9 بتاريخ 29-06-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 2,
+  "page_range": [
+   2444,
+   2445
+  ],
+  "source": "https://drive.google.com/file/d/1dbdEHHry2SYyZi_v8ChUrsomGSkgKMLK/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-211"
+ },
+ {
+  "id": "DOC-212",
+  "order": 212,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 11 بتاريخ 28-07-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2446,
+   2448
+  ],
+  "source": "https://drive.google.com/file/d/1rxJLq40p-JLw31vU0MDQVzebO-G01oMS/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-212"
+ },
+ {
+  "id": "DOC-213",
+  "order": 213,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 8 بتاريخ 17-05-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2449,
+   2451
+  ],
+  "source": "https://drive.google.com/file/d/1IDmNeN429NCQRSIGUAQHKJ-aznGuCGys/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-213"
+ },
+ {
+  "id": "DOC-214",
+  "order": 214,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 13 بتاريخ 16-10-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2452,
+   2454
+  ],
+  "source": "https://drive.google.com/file/d/11FQ1ua0n93eUOIGZ2c8QYmDbqKPfQ_jD/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-214"
+ },
+ {
+  "id": "DOC-215",
+  "order": 215,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 6 بتاريخ 04-04-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 2,
+  "page_range": [
+   2455,
+   2456
+  ],
+  "source": "https://drive.google.com/file/d/16VrbfwMxRHLTE3K2RZk-UFkRCT6zt7dy/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-215"
+ },
+ {
+  "id": "DOC-216",
+  "order": 216,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 15 بتاريخ 02-11-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2457,
+   2459
+  ],
+  "source": "https://drive.google.com/file/d/1hkfSLIlt1CV7iXSojoDV0DWUdUQ3nhJT/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-216"
+ },
+ {
+  "id": "DOC-217",
+  "order": 217,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط جلسة رقم 20 يوم 21-04-1444 هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2460,
+   2462
+  ],
+  "source": "https://drive.google.com/file/d/1o3gbUf0T-0k2DHnixUjli_gFM_5BHkmF/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-217"
+ },
+ {
+  "id": "DOC-218",
+  "order": 218,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 4 بتاريخ 28-02-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2463,
+   2465
+  ],
+  "source": "https://drive.google.com/file/d/1kYpVfNZKMHIfJHFa1GvKldMqUh4NGIQF/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-218"
+ },
+ {
+  "id": "DOC-219",
+  "order": 219,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 2 بتاريخ 23-01-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 2,
+  "page_range": [
+   2466,
+   2467
+  ],
+  "source": "https://drive.google.com/file/d/12ZykSkxkU8VZrPR9gtE4xMMtEwcOUWA6/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-219"
+ },
+ {
+  "id": "DOC-220",
+  "order": 220,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 5 بتاريخ 20-03-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2468,
+   2470
+  ],
+  "source": "https://drive.google.com/file/d/1ptMLbcnKqHkbp9bFlL_QuU5BhxDmjPuf/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-220"
+ },
+ {
+  "id": "DOC-221",
+  "order": 221,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط جلسة رقم 23 يوم 02-07-1444 هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2471,
+   2473
+  ],
+  "source": "https://drive.google.com/file/d/1oQqKZgSZmKIfUnGRF0wsCgAmmsrTIUTa/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-221"
+ },
+ {
+  "id": "DOC-222",
+  "order": 222,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 7 بتاريخ 25-04-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 2,
+  "page_range": [
+   2474,
+   2475
+  ],
+  "source": "https://drive.google.com/file/d/1UTTWQULs4OBCTZg1QhJl6uak0M6Vl4zT/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-222"
+ },
+ {
+  "id": "DOC-223",
+  "order": 223,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 3 بتاريخ 14-02-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 3,
+  "page_range": [
+   2476,
+   2478
+  ],
+  "source": "https://drive.google.com/file/d/1n6jZBX4UajjoaQUh0kN6PlwyW2-OTr7Z/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-223"
+ },
+ {
+  "id": "DOC-224",
+  "order": 224,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط جلسة رقم 21 يوم 22-05-1444 هـ للقضية رقم 42824717.pdf",
+  "pages_est": 2,
+  "page_range": [
+   2479,
+   2480
+  ],
+  "source": "https://drive.google.com/file/d/1a67bUpgWMWC15VqA7HwgLZdu0nCdBupB/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-224"
+ },
+ {
+  "id": "DOC-225",
+  "order": 225,
+  "type": "محضر",
+  "category": "الخطابات والمراسلات",
+  "title": "ضبط الجلسة رقم 14 بتاريخ 25-10-1443هـ للقضية رقم 42824717.pdf",
+  "pages_est": 4,
+  "page_range": [
+   2481,
+   2484
+  ],
+  "source": "https://drive.google.com/file/d/1F8edXbcjfBZ928RxuFgI3K-hRcjJnxmC/view?usp=drivesdk",
+  "quality": "",
+  "needs_review": true,
+  "anchor": "DOC-225"
  }
 ]
