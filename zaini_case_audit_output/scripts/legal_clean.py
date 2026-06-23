@@ -93,6 +93,12 @@ def clean_line(s, stats):
     s = xml_safe(s)
     if s != orig:
         stats["ctrl_removed"] += 1
+    # إزالة محارف اتجاه/صفرية ورموز OCR التالفة
+    s2 = re.sub(r"[​-‏‪-‮⁦-⁩﻿�□■◦�¤¦]", "", s)
+    s2 = re.sub(r"[~`^_=]{2,}", " ", s2)          # سلاسل رموز زخرفية من المسح
+    if s2 != s:
+        stats["ctrl_removed"] += 1
+    s = s2
     # توحيد المسافات
     s2 = re.sub(r"[ \t]{2,}", " ", s)
     if s2 != s:
@@ -104,6 +110,8 @@ def clean_line(s, stats):
     if s2 != s:
         stats["punct_fixed"] += 1
     s = s2
+    # طيّ التكرار الفوري لكلمة/رقم نفسه (أثر OCR شائع): «زيني زيني» → «زيني»
+    s = re.sub(r"(\b[^\s]{3,}\b)(\s+\1\b)+", r"\1", s)
     return s.strip()
 
 
@@ -200,17 +208,30 @@ def process_doc(rec, qc, logs):
         if buf:
             paras.append(("para", " ".join(buf).strip(), list(dict.fromkeys(buftags))))
             buf.clear(); buftags.clear()
+    blanks = 0
+    last_norm = ""
     for kind, t, tags in body:
         if kind == "blank":
-            flush()
+            blanks += 1
+            if blanks >= 2:   # فجوة فقرة حقيقية فقط؛ السطر الفارغ المفرد يُتجاهل (إعادة تدفّق)
+                flush()
             continue
+        blanks = 0
+        # أسقِط الأسطر التي لا تحمل أي حرف/رقم (ضوضاء رموز خالصة)
+        if not re.search(r"[0-9٠-٩A-Za-z؀-ۿ]", t):
+            continue
+        # اطوِ السطر المكرّر فوراً (أثر OCR: نفس السطر مرّتين/أكثر متتالية)
+        nt = norm(t)
+        if nt and nt == last_norm:
+            continue
+        last_norm = nt
         if STRUCT_RE.match(t):
             flush()
             paras.append(("heading", t, tags))
             continue
         buf.append(t); buftags.extend(tags)
-        # نهاية جملة واضحة → اقفل الفقرة
-        if re.search(r"[.؟!]$", t) or len(t) < 4:
+        # اقفل الفقرة عند نهاية جملة واضحة فقط (لا على الأسطر القصيرة — تُدمج)
+        if re.search(r"[.؟!]$", t) and len(" ".join(buf)) > 40:
             flush()
     flush()
 
@@ -244,6 +265,24 @@ def style_doc(doc):
     st.font.name = FONT; st.font.size = Pt(18)
     rpr = st.element.get_or_add_rPr(); rf = rpr.get_or_add_rFonts()
     rf.set(qn("w:cs"), FONT); rf.set(qn("w:ascii"), FONT); rf.set(qn("w:hAnsi"), FONT)
+    # RTL على مستوى النمط الافتراضي (يضمن الاتجاه حتى لو بدأ السطر بحرف لاتيني/رقم)
+    rpr.append(OxmlElement("w:rtl"))
+    szCs = OxmlElement("w:szCs"); szCs.set(qn("w:val"), "36"); rpr.append(szCs)
+    ppr = st.element.get_or_add_pPr(); ppr.append(OxmlElement("w:bidi"))
+    jc = OxmlElement("w:jc"); jc.set(qn("w:val"), "right"); ppr.append(jc)
+    # ضبط افتراضيات المستند للنص المركّب (Complex Script) لتفادي العرض LTR
+    try:
+        styles_el = doc.styles.element
+        dd = styles_el.find(qn("w:docDefaults"))
+        if dd is not None:
+            rpd = dd.find(qn("w:rPrDefault"))
+            if rpd is not None:
+                rr = rpd.find(qn("w:rPr"))
+                if rr is None:
+                    rr = OxmlElement("w:rPr"); rpd.append(rr)
+                rr.append(OxmlElement("w:rtl"))
+    except Exception:
+        pass
 
 
 def add_par(doc, text, size=18, bold=False, italic=False, color=None, highlight=False, align="right"):

@@ -118,6 +118,74 @@ def add_anchor_link(par, text, anchor, size=16):
     h.append(r); par._p.append(h)
 
 
+def _cell(cell, txt, bold=False, size=13):
+    cell.text = ""
+    p = cell.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    p._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
+    if str(txt):
+        r = p.add_run(LC.xml_safe(str(txt))); r.bold = bold; r.font.name = FONT; r.font.size = Pt(size)
+        rpr = r._element.get_or_add_rPr(); rpr.get_or_add_rFonts().set(qn("w:cs"), FONT)
+        rpr.append(OxmlElement("w:rtl"))
+        szCs = OxmlElement("w:szCs"); szCs.set(qn("w:val"), str(size * 2)); rpr.append(szCs)
+
+
+def is_financial(d):
+    if d["doc_type"] in ("تقرير خبرة", "مستند مالي"):
+        return True
+    return bool(re.search(r"تقييم|مسحوب|مصروف|مصاريف|كشف\s*حساب|قروض|سلف|ميزاني|حقوق\s*الملكية|تقرير\s*مالي", d["title"]))
+
+
+_MONEY_CTX = re.compile(r"مبلغ|قيم|ريال|مليون|مليار|[أا]لف|رصيد|حص[ةه]|تقييم|[إا]جمالي|محكوم|سداد|دفع|تعويض|دين")
+_AR2EN = {ord(a): ord(e) for a, e in zip("٠١٢٣٤٥٦٧٨٩", "0123456789")}
+_NUM = re.compile(r"(\d[\d.,٬٠-٩]{0,16})\s*(مليون|مليار|[أا]لف|ريال|ر\.?س|﷼)?")
+
+
+def financial_figures(d):
+    text = "\n".join(p[1] for p in d["paras"])
+    figs, seen = [], set()
+    for line in text.split("\n"):
+        ctx_money = bool(_MONEY_CTX.search(line))
+        for m in _NUM.finditer(line):
+            num = m.group(1).strip(".,٬"); suf = m.group(2) or ""
+            digits = re.sub(r"\D", "", num.translate(_AR2EN))
+            if not digits:
+                continue
+            # تواريخ/أرقام قضايا ليست مبالغ
+            if re.search(r"\d{1,2}[-/]\d{1,2}[-/]\d{2,4}", line) and not suf and not ctx_money:
+                continue
+            if digits == "42824717":
+                continue
+            # مبلغ فعلي: إمّا بوحدة (مليون/ريال/ألف)، أو رقم كبير (≥6 خانات) في سياق مالي
+            big = len(digits) >= 6
+            if not (suf or (big and ctx_money)):
+                continue
+            if not suf and len(digits) >= 14:   # أرقام طويلة جداً = هويات/سجلات لا مبالغ
+                continue
+            key = digits + suf
+            if key in seen:
+                continue
+            seen.add(key)
+            ctx = re.sub(r"\s+", " ", line).strip()[:48]
+            figs.append((ctx or "—", (num + ((" " + suf) if suf else "")).strip()))
+    return figs[:50]
+
+
+def add_financial_table(doc, d):
+    figs = financial_figures(d)
+    if not figs:
+        return
+    LC.add_par(doc, "أرقام ومبالغ مستخرجة آلياً من الوثيقة (للمراجعة — ليست جردًا محاسبيًا)",
+               size=15, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
+    t = doc.add_table(rows=1, cols=2); t.style = "Table Grid"
+    t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
+    _cell(t.rows[0].cells[0], "السياق", bold=True, size=13)
+    _cell(t.rows[0].cells[1], "المبلغ/الرقم", bold=True, size=13)
+    for ctx, val in figs:
+        cells = t.add_row().cells
+        _cell(cells[0], ctx, size=12); _cell(cells[1], val, size=12)
+    doc.add_paragraph("")
+
+
 def main():
     sample = None
     if "--sample" in sys.argv:
@@ -296,18 +364,23 @@ def build_docx(docs, dup_titles):
                  "معرّفات ثابتة DOC-001 فأعلى، ونطاقات صفحات تقديرية؛ الفهرس والبطاقات لا تغني عن الأصل.",
                  "الروابط الداخلية لتيسير التصفّح (في Word: Ctrl+النقر على الرابط)."]:
         LC.add_par(doc, "• " + line, size=16)
-    # الفهرس الرئيسي (قابل للنقر)
+    # الفهرس الرئيسي (جدول قابل للنقر: أعمدة وصفوف)
     pidx = LC.add_par(doc, "الفهرس الرئيسي", size=22, bold=True, align="center")
     add_bookmark(pidx, "INDEX", bid[0]); bid[0] += 1
+    head = ["#", "رقم الوثيقة", "النوع", "العنوان", "التاريخ", "الصفحات", "الجودة"]
+    t = doc.add_table(rows=1, cols=len(head)); t.style = "Table Grid"
+    t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
+    for c, htxt in zip(t.rows[0].cells, head):
+        _cell(c, htxt, bold=True, size=13)
     for n, d in enumerate(docs, 1):
-        p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
-        run = p.add_run("%d. " % n); run.font.name = FONT; run.font.size = Pt(15)
-        run._element.get_or_add_rPr().append(OxmlElement("w:rtl"))
-        add_anchor_link(p, "%s — %s" % (d["id"], d["title"][:80]), d["id"], size=15)
-        tail = p.add_run("  (%s · ص %d–%d · %s)" % (d["doc_type"], d["page_start"], d["page_end"], d["qc"].get("status", "")))
-        tail.font.name = FONT; tail.font.size = Pt(12); tail.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
-        tail._element.get_or_add_rPr().append(OxmlElement("w:rtl"))
+        cells = t.add_row().cells
+        _cell(cells[0], str(n), size=12)
+        _cell(cells[1], "", size=12); add_anchor_link(cells[1].paragraphs[0], d["id"], d["id"], size=12)
+        _cell(cells[2], d["doc_type"], size=12)
+        _cell(cells[3], d["title"][:90], size=12)
+        _cell(cells[4], d["card"].get("التاريخ", ""), size=12)
+        _cell(cells[5], "%d–%d" % (d["page_start"], d["page_end"]), size=12)
+        _cell(cells[6], d["qc"].get("status", ""), size=12)
     # فهارس فرعية
     LC.add_par(doc, "الفهارس الفرعية حسب النوع", size=22, bold=True, align="center")
     for cat in CAT_ORDER:
@@ -333,12 +406,14 @@ def build_docx(docs, dup_titles):
         t = doc.add_table(rows=len(rows), cols=2); t.style = "Table Grid"
         t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
         for i, (k, v) in enumerate(rows):
-            for cell, txt, b in [(t.rows[i].cells[0], k, True), (t.rows[i].cells[1], str(v), False)]:
-                cell.text = ""; p = cell.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-                p._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
-                r = p.add_run(LC.xml_safe(str(txt)[:400])); r.bold = b; r.font.name = FONT; r.font.size = Pt(15)
-                rpr = r._element.get_or_add_rPr(); rpr.get_or_add_rFonts().set(qn("w:cs"), FONT)
-                rpr.append(OxmlElement("w:rtl"))
+            _cell(t.rows[i].cells[0], k, bold=True, size=15)
+            _cell(t.rows[i].cells[1], str(v)[:400], size=15)
+        doc.add_paragraph("")
+        # جدول الأرقام/المبالغ للوثائق المالية والتقييمات والكشوفات
+        if is_financial(d):
+            add_financial_table(doc, d)
+        # عنوان «تفريغ الوثيقة» ثم النص تحت البطاقة
+        LC.add_par(doc, "تفريغ نص الوثيقة", size=18, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
         # المتن
         for kind, tx, tags in d["paras"]:
             if kind == "heading":
