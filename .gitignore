@@ -18,3 +18,6 @@ zaini_case_audit_output/viewer/
 # مخرجات التنقيح: نسخة احتياطية و PDF كبير (يُولَّد محلياً)
 zaini_case_audit_output/outputs/cleaned/_backup/
 zaini_case_audit_output/outputs/cleaned/*.pdf
+
+# حزمة الوثائق: PDF كبير (يُرسَل/يُولَّد محلياً)
+zaini_case_audit_output/outputs/package/*.pdf
