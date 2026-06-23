@@ -47,6 +47,8 @@ def main():
     for c in cands:
         fid = c["fid"]; pdf = BATCH / (fid + ".pdf")
         rec = by_fid.get(fid)
+        if rec is not None and rec.get("reocr", {}).get("replaced"):
+            continue  # عولِجت سلفاً (idempotency) — لا تُعد المعالجة ولا تُتلِف full_text_old
         if not pdf.exists() or rec is None:
             comp.append({"fid": fid[:8], "title": c["title"][:40], "status": "تعذّر (لم يُنزّل/غير موجود)",
                          "old_q": "", "new_q": "", "delta": "", "decision": "بقي القديم — يحتاج الأصل"})
