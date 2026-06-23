@@ -324,8 +324,17 @@ def write_html(docs, dups):
             vv = ("<a href='%s'>%s</a>" % (e(v), e(v))) if str(v).startswith("http") else e(v)
             parts.append("<tr><td><b>%s</b></td><td>%s</td></tr>" % (e(k), vv))
         parts.append("</table></div>")
-        body = "\n".join(p[1] if p[0] != "heading" else "\n【%s】" % p[1] for p in d["paras"])
-        parts.append("<div class='txt'>%s</div>" % e(body))
+        if is_financial(d):
+            figs = financial_figures(d)
+            if figs:
+                parts.append("<h3>أرقام ومبالغ مستخرجة آلياً (للمراجعة)</h3><table><tr><th>السياق</th><th>المبلغ/الرقم</th></tr>")
+                for ctx, val in figs:
+                    parts.append("<tr><td>%s</td><td>%s</td></tr>" % (e(ctx), e(val)))
+                parts.append("</table>")
+            parts.append("<p class='note'>وثيقة مالية — التفريغ النصّي الكامل والجداول في «الملحق المالي» المستقل.</p>")
+        else:
+            body = "\n".join(p[1] if p[0] != "heading" else "\n【%s】" % p[1] for p in d["paras"])
+            parts.append("<h3>تفريغ نص الوثيقة</h3><div class='txt'>%s</div>" % e(body))
         parts.append("<p class='back'><a href='#index'>↑ العودة إلى الفهرس</a></p></div>")
     parts.append("</body></html>")
     (OUTDIR / "حزمة_الوثائق.html").write_text("".join(parts), encoding="utf-8")
@@ -409,18 +418,19 @@ def build_docx(docs, dup_titles):
             _cell(t.rows[i].cells[0], k, bold=True, size=15)
             _cell(t.rows[i].cells[1], str(v)[:400], size=15)
         doc.add_paragraph("")
-        # جدول الأرقام/المبالغ للوثائق المالية والتقييمات والكشوفات
         if is_financial(d):
+            # وثيقة مالية: بطاقة + جدول مبالغ + إحالة للملحق (بلا تفريغ خام في الرئيسي)
             add_financial_table(doc, d)
-        # عنوان «تفريغ الوثيقة» ثم النص تحت البطاقة
-        LC.add_par(doc, "تفريغ نص الوثيقة", size=18, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
-        # المتن
-        for kind, tx, tags in d["paras"]:
-            if kind == "heading":
-                LC.add_par(doc, tx, size=20, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
-            else:
-                hl = bool(tags)
-                LC.add_par(doc, tx + (("  " + " ".join(tags)) if tags else ""), size=18, highlight=hl)
+            LC.add_par(doc, "وثيقة مالية — التفريغ النصّي الكامل والجداول في «الملحق المالي» المستقل.",
+                       size=15, italic=True, color=RGBColor(0x7c, 0x2d, 0x12))
+        else:
+            LC.add_par(doc, "تفريغ نص الوثيقة", size=18, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
+            for kind, tx, tags in d["paras"]:
+                if kind == "heading":
+                    LC.add_par(doc, tx, size=20, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
+                else:
+                    hl = bool(tags)
+                    LC.add_par(doc, tx + (("  " + " ".join(tags)) if tags else ""), size=18, highlight=hl)
         pb = doc.add_paragraph(); pb.alignment = WD_ALIGN_PARAGRAPH.CENTER
         pb._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
         add_anchor_link(pb, "↑ العودة إلى الفهرس", "INDEX", size=13)
