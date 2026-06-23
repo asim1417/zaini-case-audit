@@ -14,6 +14,7 @@ import os, re, sys, csv, json, shutil, datetime
 from pathlib import Path
 
 from pdf2image import convert_from_path
+from PIL import Image
 
 ROOT = Path(os.environ.get("CASE_ROOT") or Path(__file__).resolve().parent.parent)
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -53,7 +54,11 @@ def main():
         old = rec.get("full_text", "") or ""
         old_q = RP.quality_metrics(old)["quality"]
         try:
-            images = convert_from_path(str(pdf), dpi=RP.DPI)
+            sig = open(pdf, "rb").read(4)
+            if sig[:4] == b"%PDF":
+                images = convert_from_path(str(pdf), dpi=RP.DPI)
+            else:  # صورة (JPEG/PNG) محفوظة بامتداد pdf
+                images = [Image.open(pdf).convert("RGB")]
         except Exception as e:
             comp.append({"fid": fid[:8], "title": c["title"][:40], "status": "فشل التحويل لصور",
                          "old_q": round(old_q, 1), "new_q": "", "delta": "", "decision": "بقي القديم"})
