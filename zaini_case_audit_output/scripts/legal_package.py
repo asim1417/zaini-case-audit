@@ -241,6 +241,7 @@ def main():
     # ===== المخرجات =====
     write_html(docs, dups)
     build_docx(docs, dup_titles)
+    part_paths = build_parts(docs, dup_titles)
     write_excel_index(docs)
     write_csv_index(docs)
     write_cards_json_excel(docs, dup_titles)
@@ -251,6 +252,9 @@ def main():
         "\n".join("%s — %s (%s)" % (u["doc"], u["title"], u["reason"]) for u in uncertain_log),
         encoding="utf-8")
     LC.export_pdf(OUTDIR / "حزمة_الوثائق.docx", OUTDIR)
+    for p in part_paths:
+        LC.export_pdf(p, OUTDIR)
+    print("الأجزاء المقسّمة:", len(part_paths))
 
     print("docs:", len(docs), "| فارغة:", len(blank_log), "| مشوّهة:", len(distort_log),
           "| غير مؤكد:", len(uncertain_log), "| تكرارات:", len(dups))
@@ -355,85 +359,117 @@ def methodology_html(n):
 
 
 # ---------- DOCX ----------
+_IDX_HEAD = ["#", "رقم الوثيقة", "العنوان", "النوع", "التاريخ", "الجودة"]
+_IDX_W = [Cm(1.0), Cm(2.6), Cm(7.8), Cm(3.0), Cm(2.6), Cm(1.8)]
+PART_GROUPS = [
+    ("الصكوك والأحكام", ["الصكوك والأحكام"]),
+    ("العقود والمرفقات", ["العقود والاتفاقيات", "المرفقات الأخرى"]),
+    ("المذكرات القضائية واللوائح", ["المذكرات القضائية واللوائح", "التقارير الطبية"]),
+    ("الشكاوى والطلبات", ["الشكاوى والطلبات"]),
+    ("الخطابات والمحاضر والمراسلات", ["الخطابات والمراسلات"]),
+]
+
+
+def _index_table(doc, docs):
+    t = doc.add_table(rows=1, cols=len(_IDX_HEAD)); t.style = "Table Grid"; t.allow_autofit = False
+    t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
+    lay = OxmlElement("w:tblLayout"); lay.set(qn("w:type"), "fixed"); t._tbl.tblPr.append(lay)
+    for c, htxt, w in zip(t.rows[0].cells, _IDX_HEAD, _IDX_W):
+        _cell(c, htxt, bold=True, size=12); c.width = w
+    for n, d in enumerate(docs, 1):
+        cells = t.add_row().cells
+        _cell(cells[0], str(n), size=11)
+        _cell(cells[1], "", size=11); add_anchor_link(cells[1].paragraphs[0], d["id"], d["id"], size=11)
+        _cell(cells[2], d["title"][:95], size=11)
+        _cell(cells[3], d["doc_type"], size=11)
+        _cell(cells[4], d["card"].get("التاريخ", ""), size=11)
+        _cell(cells[5], d["qc"].get("status", ""), size=11)
+        for c, w in zip(cells, _IDX_W):
+            c.width = w
+
+
+def _render_doc(doc, d, dup_titles, bid):
+    doc.add_page_break()
+    h = doc.add_paragraph(); h.style = doc.styles["Heading 1"]
+    h.alignment = WD_ALIGN_PARAGRAPH.RIGHT; h._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
+    run = h.add_run("%s — %s" % (d["id"], d["title"])); run.font.name = FONT
+    run._element.get_or_add_rPr().append(OxmlElement("w:rtl"))
+    add_bookmark(h, d["id"], bid[0]); bid[0] += 1
+    LC.add_par(doc, "بطاقة الوثيقة", size=20, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
+    rows = [(k, v) for k, v in card_fields(d, dup_titles) if str(v).strip()]
+    t = doc.add_table(rows=len(rows), cols=2); t.style = "Table Grid"
+    t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
+    for i, (k, v) in enumerate(rows):
+        _cell(t.rows[i].cells[0], k, bold=True, size=15)
+        _cell(t.rows[i].cells[1], str(v)[:400], size=15)
+    doc.add_paragraph("")
+    if is_financial(d):
+        add_financial_table(doc, d)
+        LC.add_par(doc, "وثيقة مالية — التفريغ النصّي الكامل والجداول في «الملحق المالي» المستقل.",
+                   size=15, italic=True, color=RGBColor(0x7c, 0x2d, 0x12))
+    else:
+        LC.add_par(doc, "تفريغ نص الوثيقة", size=18, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
+        for kind, tx, tags in d["paras"]:
+            if kind == "heading":
+                LC.add_par(doc, tx, size=20, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
+            else:
+                LC.add_par(doc, tx + (("  " + " ".join(tags)) if tags else ""), size=18, highlight=bool(tags))
+    pb = doc.add_paragraph(); pb.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pb._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
+    add_anchor_link(pb, "↑ العودة إلى الفهرس", "INDEX", size=13)
+
+
+def _doc_shell(title_line):
+    doc = Document(); LC.style_doc(doc); LC.set_section_rtl(doc.sections[0]); LC.add_footer_page(doc)
+    p0 = LC.add_par(doc, title_line, size=24, bold=True, align="center")
+    add_bookmark(p0, "top", 1)
+    LC.add_par(doc, "مخرج آلي تنظيمي يحتاج مراجعة بشرية — ليس رأياً قانونياً · %s" % TODAY,
+               size=14, italic=True, align="center", color=RGBColor(0x7c, 0x2d, 0x12))
+    return doc
+
+
+def build_parts(docs, dup_titles):
+    """يقسّم الوثائق غير المالية إلى أجزاء حسب النوع؛ كل جزء ملف مستقل: فهرس جدولي + بطاقات + تفريغ."""
+    paths = []
+    for i, (name, cats) in enumerate(PART_GROUPS, 1):
+        sub = [d for d in docs if d["cat"] in cats and not is_financial(d)]
+        if not sub:
+            continue
+        doc = _doc_shell("حزمة الوثائق — الجزء %d: %s" % (i, name))
+        LC.add_par(doc, "عدد وثائق هذا الجزء: %d" % len(sub), size=15, align="center")
+        pidx = LC.add_par(doc, "فهرس وثائق هذا الجزء", size=22, bold=True, align="center")
+        add_bookmark(pidx, "INDEX", 900 + i)
+        _index_table(doc, sub)
+        bid = [1000 * i]
+        for d in sub:
+            _render_doc(doc, d, dup_titles, bid)
+        fn = OUTDIR / ("حزمة_الوثائق_جزء%d_%s.docx" % (i, name.replace(" ", "_")))
+        doc.save(str(fn)); paths.append(fn)
+    return paths
+
+
 def build_docx(docs, dup_titles):
     doc = Document()
     LC.style_doc(doc)
     LC.set_section_rtl(doc.sections[0])
     LC.add_footer_page(doc)
     bid = [1]
-    p0 = LC.add_par(doc, "الحزمة الوثائقية القانونية", size=24, bold=True, align="center")
+    p0 = LC.add_par(doc, "الحزمة الوثائقية القانونية (النسخة الكاملة)", size=24, bold=True, align="center")
     add_bookmark(p0, "top", bid[0]); bid[0] += 1
     LC.add_par(doc, "مخرج آلي تنظيمي يحتاج مراجعة بشرية — ليس رأياً قانونياً · %s" % TODAY,
                size=14, italic=True, align="center", color=RGBColor(0x7c, 0x2d, 0x12))
-    # مقدمة منهجية
     LC.add_par(doc, "منهجية إعداد وتجهيز الحزمة الوثائقية", size=22, bold=True)
     for line in ["تجميع وتنظيم وفهرسة لوثائق خام متعددة مستخرجة آلياً (OCR).",
                  "النصوص فُحصت: فصل الترويسات، ضبط المسافات، كشف التشوّه واختلاط الاتجاه؛ بلا اختلاق.",
                  "النصوص غير الواضحة مُيِّزت ولم تُصحَّح اجتهاداً؛ والمصوّرة تُربط بأصلها.",
-                 "معرّفات ثابتة DOC-001 فأعلى، ونطاقات صفحات تقديرية؛ الفهرس والبطاقات لا تغني عن الأصل.",
-                 "الروابط الداخلية لتيسير التصفّح (في Word: Ctrl+النقر على الرابط)."]:
+                 "الوثائق المالية مفهرسة هنا ببطاقة وجدول مبالغ، وتفريغها الكامل في «الملحق المالي» المستقل.",
+                 "هذه نسخة كاملة لكل الوثائق؛ وتتوفّر أيضاً أجزاء مقسّمة أخفّ للتصفّح."]:
         LC.add_par(doc, "• " + line, size=16)
-    # الفهرس الرئيسي (جدول قابل للنقر: أعمدة وصفوف)
     pidx = LC.add_par(doc, "الفهرس الرئيسي", size=22, bold=True, align="center")
     add_bookmark(pidx, "INDEX", bid[0]); bid[0] += 1
-    head = ["#", "رقم الوثيقة", "النوع", "العنوان", "التاريخ", "الصفحات", "الجودة"]
-    t = doc.add_table(rows=1, cols=len(head)); t.style = "Table Grid"
-    t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
-    for c, htxt in zip(t.rows[0].cells, head):
-        _cell(c, htxt, bold=True, size=13)
-    for n, d in enumerate(docs, 1):
-        cells = t.add_row().cells
-        _cell(cells[0], str(n), size=12)
-        _cell(cells[1], "", size=12); add_anchor_link(cells[1].paragraphs[0], d["id"], d["id"], size=12)
-        _cell(cells[2], d["doc_type"], size=12)
-        _cell(cells[3], d["title"][:90], size=12)
-        _cell(cells[4], d["card"].get("التاريخ", ""), size=12)
-        _cell(cells[5], "%d–%d" % (d["page_start"], d["page_end"]), size=12)
-        _cell(cells[6], d["qc"].get("status", ""), size=12)
-    # فهارس فرعية
-    LC.add_par(doc, "الفهارس الفرعية حسب النوع", size=22, bold=True, align="center")
-    for cat in CAT_ORDER:
-        grp = [d for d in docs if d["cat"] == cat]
-        if not grp:
-            continue
-        LC.add_par(doc, "%s (%d)" % (cat, len(grp)), size=18, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
-        for d in grp:
-            p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            p._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
-            add_anchor_link(p, "%s — %s" % (d["id"], d["title"][:80]), d["id"], size=14)
-    # الوثائق
+    _index_table(doc, docs)
     for d in docs:
-        doc.add_page_break()
-        h = doc.add_paragraph(); h.style = doc.styles["Heading 1"]
-        h.alignment = WD_ALIGN_PARAGRAPH.RIGHT; h._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
-        run = h.add_run("%s — %s" % (d["id"], d["title"])); run.font.name = FONT
-        run._element.get_or_add_rPr().append(OxmlElement("w:rtl"))
-        add_bookmark(h, d["id"], bid[0]); bid[0] += 1
-        # بطاقة
-        LC.add_par(doc, "بطاقة الوثيقة", size=20, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
-        rows = [(k, v) for k, v in card_fields(d, dup_titles) if str(v).strip()]
-        t = doc.add_table(rows=len(rows), cols=2); t.style = "Table Grid"
-        t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
-        for i, (k, v) in enumerate(rows):
-            _cell(t.rows[i].cells[0], k, bold=True, size=15)
-            _cell(t.rows[i].cells[1], str(v)[:400], size=15)
-        doc.add_paragraph("")
-        if is_financial(d):
-            # وثيقة مالية: بطاقة + جدول مبالغ + إحالة للملحق (بلا تفريغ خام في الرئيسي)
-            add_financial_table(doc, d)
-            LC.add_par(doc, "وثيقة مالية — التفريغ النصّي الكامل والجداول في «الملحق المالي» المستقل.",
-                       size=15, italic=True, color=RGBColor(0x7c, 0x2d, 0x12))
-        else:
-            LC.add_par(doc, "تفريغ نص الوثيقة", size=18, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
-            for kind, tx, tags in d["paras"]:
-                if kind == "heading":
-                    LC.add_par(doc, tx, size=20, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
-                else:
-                    hl = bool(tags)
-                    LC.add_par(doc, tx + (("  " + " ".join(tags)) if tags else ""), size=18, highlight=hl)
-        pb = doc.add_paragraph(); pb.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        pb._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
-        add_anchor_link(pb, "↑ العودة إلى الفهرس", "INDEX", size=13)
+        _render_doc(doc, d, dup_titles, bid)
     doc.save(str(OUTDIR / "حزمة_الوثائق.docx"))
 
 
