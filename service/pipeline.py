@@ -16,6 +16,10 @@ ENGINE = REPO / "zaini_case_audit_output" / "scripts"
 sys.path.insert(0, str(ENGINE))
 
 from PIL import Image                     # noqa: E402
+try:
+    import lift_engine            # محرّك استخراج مهيكل اختياري (Datalab lift)
+except Exception:
+    lift_engine = None
 from pdf2image import convert_from_path   # noqa: E402
 
 
@@ -54,6 +58,11 @@ def run_job(job_dir: Path, log=print):
         ents, _ = AZ.extract_entities(full)
         cf = {"entities": ents, "doc_type": dtype, "title": title, "viewUrl": ""}
         card = dict(MME.build_card(cf, full))
+        if lift_engine and lift_engine.available():
+            lc = lift_engine.card_from_lift(f)
+            if lc:
+                card = {**card, **lc}
+                log("lift: بطاقة مُحسّنة — %s" % f.name)
         recs.append({"id": f.name, "title": title, "doc_type": dtype, "parent_path": "",
                      "viewUrl": "", "card": card, "entities": ents,
                      "readable": bool(full.strip()), "full_text": full,
