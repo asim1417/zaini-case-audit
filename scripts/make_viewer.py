@@ -341,7 +341,7 @@ window.startApp = function(){
 
   var listEl=document.getElementById('list'),detailEl=document.getElementById('detail'),
       qEl=document.getElementById('q'),countEl=document.getElementById('count'),selCountEl=document.getElementById('selCount');
-  var current=null,curP=null,marks=[],markIdx=-1;
+  var current=null,curP=null,marks=[],markIdx=-1,_pendingPos='first';
 
   function esc(s){return (s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
   function selectedCount(){var n=0;for(var k in selected)if(selected[k])n++;return n;}
@@ -483,16 +483,33 @@ window.startApp = function(){
     // ترقيم أسطر
     var lines=out.split('\n');
     box.innerHTML=lines.map(function(l,i){return '<div class="ln"><span class="lno">'+(i+1)+'</span><span class="lc">'+l+'</span></div>';}).join('');
-    marks=Array.prototype.slice.call(box.querySelectorAll('mark'));markIdx=marks.length?0:-1;updMarkInfo();if(marks.length)gotoMark(0);
+    marks=Array.prototype.slice.call(box.querySelectorAll('mark'));markIdx=marks.length?0:-1;updMarkInfo();
+    if(marks.length)gotoMark(_pendingPos==='last'?marks.length-1:0);
+    _pendingPos='first';
   }
-  function updMarkInfo(){var el=document.getElementById('mInfo');if(el)el.textContent=marks.length?((markIdx+1)+' من '+marks.length):'—';}
+  function updMarkInfo(){var el=document.getElementById('mInfo');if(!el)return;
+    var P=parseQuery(qEl.value.trim());var fl=P.empty?[]:filtered();
+    var di=-1;for(var z=0;z<fl.length;z++){if(current&&fl[z].id===current.id){di=z;break;}}
+    var dp=(fl.length>1&&di>=0)?(' · وثيقة '+(di+1)+'/'+fl.length):'';
+    el.textContent=marks.length?((markIdx+1)+' من '+marks.length+dp):(fl.length>1&&di>=0?('وثيقة '+(di+1)+'/'+fl.length):'—');}
   function gotoMark(i){if(!marks.length)return;markIdx=(i+marks.length)%marks.length;
     marks.forEach(function(m){m.classList.remove('cur');});marks[markIdx].classList.add('cur');
     marks[markIdx].scrollIntoView({block:'center'});updMarkInfo();}
+  // تنقّل مثل Word: بين المطابقات داخل الوثيقة، ثم يعبر إلى الوثيقة المطابقة التالية/السابقة.
+  function _matchDocs(){var P=parseQuery(qEl.value.trim());return P.empty?[]:filtered();}
+  function _curIdxIn(fl){for(var z=0;z<fl.length;z++){if(current&&fl[z].id===current.id)return z;}return -1;}
+  function navNext(){
+    if(marks.length&&markIdx<marks.length-1){gotoMark(markIdx+1);return;}
+    var fl=_matchDocs();if(fl.length<2){if(marks.length)gotoMark(0);return;}
+    var i=_curIdxIn(fl);_pendingPos='first';openDoc(fl[(i+1+fl.length)%fl.length]);}
+  function navPrev(){
+    if(marks.length&&markIdx>0){gotoMark(markIdx-1);return;}
+    var fl=_matchDocs();if(fl.length<2){if(marks.length)gotoMark(marks.length-1);return;}
+    var i=_curIdxIn(fl);_pendingPos='last';openDoc(fl[(i-1+fl.length)%fl.length]);}
 
   function bindDetail(d){
     var p=document.getElementById('mPrev'),n=document.getElementById('mNext');
-    if(p)p.onclick=function(){gotoMark(markIdx-1);};if(n)n.onclick=function(){gotoMark(markIdx+1);};
+    if(p)p.onclick=function(){navPrev();};if(n)n.onclick=function(){navNext();};
     var lt=document.getElementById('lnToggle');if(lt)lt.onclick=function(){document.body.classList.toggle('lines');};
     detailEl.querySelectorAll('.chips span').forEach(function(s){s.onclick=function(){qEl.value='"'+s.getAttribute('data-q')+'"';renderList();openDoc(current);};});
     detailEl.querySelectorAll('.qbtn').forEach(function(b){b.onclick=function(){
@@ -518,7 +535,13 @@ window.startApp = function(){
   });
   selpop.onclick=function(){if(selpop._txt&&current){quotes.push({t:selpop._txt,id:current.id,title:current.title,date:new Date().toISOString().slice(0,10)});LS.set('quotes',quotes);selpop.style.display='none';if(curView==='quotes')renderQuotes();}};
 
-  var qt;qEl.oninput=function(){clearTimeout(qt);qt=setTimeout(function(){renderList();if(current)openDoc(current);},160);};
+  var qt;qEl.oninput=function(){clearTimeout(qt);qt=setTimeout(function(){renderList();
+    var P=parseQuery(qEl.value.trim());
+    if(!P.empty){var fl=filtered();if(fl.length){if(!current||!matchDoc(P,current._h)){_pendingPos='first';openDoc(fl[0]);}else openDoc(current);}}
+    else if(current)openDoc(current);
+  },160);};
+  // Enter = النتيجة التالية، Shift+Enter = السابقة (مثل Word)
+  qEl.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();if(e.shiftKey)navPrev();else navNext();}};
   typeSel.onchange=renderList;sortSel.onchange=renderList;
   document.getElementById('grp').onchange=renderList;document.getElementById('onlyFlag').onchange=renderList;
   document.getElementById('selAll').onclick=function(){filtered().forEach(function(d){selected[d.id]=true;});updSel();renderList();};
