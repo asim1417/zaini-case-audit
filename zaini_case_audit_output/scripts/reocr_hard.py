@@ -30,14 +30,7 @@ TXT = OUT / "ocr_text"
 DPI = 400
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
-TARGETS = [  # أدنى الوثائق بعد إعادة OCR؛ نجرّب المحرّك المعزّز (استبدال إن تحسّن)
-    ("1V6hiunw2O1ZPkYVKzawoxTx9TrqmP2pw", "replace"),
-    ("1iouPL40VZKQk23j_o5ek8QYclVwUDgss", "replace"),
-    ("1aOyOSA55l-IVyi3xvFsD7fTp2UoDWdFt", "replace"),
-    ("16jMMKVVp_ypWfDmwhI7Zo9wQmkAgoS-W", "replace"),
-    ("1z9GZ0JCbdC1t8YRdnEPKuWm8P_WOHAmZ", "replace"),
-    ("1NXAf28opoOQlQOrGHn8p4CkSCBPGl0T1", "replace"),
-]
+TARGETS = []  # [("<DRIVE_FILE_ID>", "replace"|"new")]
 
 
 def otsu(gray):

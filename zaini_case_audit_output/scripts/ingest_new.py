@@ -25,12 +25,7 @@ JSONL = ROOT / "outputs" / "json" / "full_documents.jsonl"
 BACKUP = ROOT / "outputs" / "reocr_update" / "_backup"
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
-FOLDER = {
-    "1HivOtyl1MIY9CG0alFmo4aouGnupuc7h": "محاضر ضبط الجلسات للدعوى 42824717",
-    "1dJBxUfBSNi1FwQEPaPTmTiI9JnhYAcWn": "الأحكام الصادرة في القضية 42824717",
-    "1MEqXV5RKLNqC-cZHqvHwxREpc42SGyeO": "مرفقات المدعي بموقع ناجز",
-    "1MqvRb940DF0vLBXP66oucVVtDaDmo1nU": "المجلد الرئيسي للقضية",
-}
+FOLDER = {}  # {"<DRIVE_FOLDER_ID>": "اسم المجلد"} اختياري
 
 
 def main():

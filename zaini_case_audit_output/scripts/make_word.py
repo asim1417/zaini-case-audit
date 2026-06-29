@@ -165,7 +165,7 @@ def csv_to_table(doc, csv_path, title, max_rows=400):
 def build_tables_doc():
     doc = Document()
     style_doc(doc)
-    add_heading_rtl(doc, "الجداول الرئيسية لقضية زيني 42824717", level=0)
+    add_heading_rtl(doc, "الجداول الرئيسية للقضية", level=0)
     add_para_rtl(doc, f"{TAG_S}  {TAG_R}", italic=True)
     add_para_rtl(doc, "جداول آلية تحتاج مراجعة بشرية — لا تُعد رأياً قانونياً نهائياً.", italic=True)
     for csvname, title in [
@@ -191,7 +191,7 @@ def build_full_text_doc(staging):
     files.sort(key=lambda f: (f.get("parent_path", ""), f.get("title", "")))
     doc = Document()
     style_doc(doc)
-    add_heading_rtl(doc, "النصوص المستخرجة من مستندات قضية زيني 42824717", level=0)
+    add_heading_rtl(doc, "النصوص المستخرجة من مستندات القضية", level=0)
     add_para_rtl(doc, f"{TAG_S}  {TAG_R}", italic=True)
     add_para_rtl(doc, "تجميع آلي لنصوص المستندات المقروءة. النصوص الممسوحة ضوئياً (OCR) "
                       "قد يكون ترتيبها بصرياً ويصعب قراءتها؛ موسومة بذلك. تحتاج مراجعة.",

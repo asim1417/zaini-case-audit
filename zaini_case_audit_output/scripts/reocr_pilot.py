@@ -30,12 +30,7 @@ LOW_QUALITY = 40      # دون هذا تُوسم الصفحة «تحتاج مر�
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 # خريطة ملفات العيّنة → fileId الأصلي (لربط النص القديم)
-SAMPLE = {
-    "p1.pdf": "1DC1orSlwpEXLKGc-d5GXDA7hPmFweEY7",
-    "p2.pdf": "1_edl-6wsWp6i898V24ojerQLcirk2DYY",
-    "p3.pdf": "1j2VYyYFekoTtuI8-il8EESkojzRCKejR",
-    "p4.pdf": "1GZX5AgsAuYugwfgVC3f28vRrhZwFV1lF",
-}
+SAMPLE = {}  # {"out.pdf": "<DRIVE_FILE_ID>"} عند الاستخدام
 
 
 def clamp(x, a, b):

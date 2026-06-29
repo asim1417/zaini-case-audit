@@ -30,3 +30,13 @@ zaini_case_audit_output/staging/reocr_batch/
 zaini_case_audit_output/outputs/reocr_hard/_t.png
 zaini_case_audit_output/outputs/reocr_hard/page_img/
 service/__pycache__/
+
+# ===== حظر رفع أي بيانات قضية (سرّية) — الكود فقط يُرفع =====
+zaini_case_audit_output/outputs/
+zaini_case_audit_output/staging/
+zaini_case_audit_output/viewer/
+zaini_case_audit_output/*.html
+docs/
+zaini_case_audit_output/case_config.json
+zaini_case_audit_output/unreadable/
+zaini_case_audit_output/logs/

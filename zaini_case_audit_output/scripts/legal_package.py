@@ -153,7 +153,7 @@ def financial_figures(d):
             # تواريخ/أرقام قضايا ليست مبالغ
             if re.search(r"\d{1,2}[-/]\d{1,2}[-/]\d{2,4}", line) and not suf and not ctx_money:
                 continue
-            if digits == "42824717":
+            if os.environ.get("CASE_NUMBER") and digits == os.environ.get("CASE_NUMBER"):
                 continue
             # مبلغ فعلي: إمّا بوحدة (مليون/ريال/ألف)، أو رقم كبير (≥6 خانات) في سياق مالي
             big = len(digits) >= 6
