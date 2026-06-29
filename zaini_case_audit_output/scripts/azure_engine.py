@@ -16,6 +16,32 @@ azure_engine.py — محرّك OCR سحابي اختياري عبر Azure AI Doc
 import os
 import re
 import functools
+from pathlib import Path
+
+
+# ---------- تحميل .env تلقائياً (مرة واحدة) من جذر المشروع ----------
+def _load_env_once():
+    here = Path(__file__).resolve()
+    seen = set()
+    for base in (here.parent, here.parent.parent, here.parent.parent.parent, Path.cwd()):
+        env = base / ".env"
+        if env in seen:
+            continue
+        seen.add(env)
+        if env.is_file():
+            try:
+                from dotenv import load_dotenv
+                load_dotenv(env, override=False)
+            except Exception:
+                for line in env.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ.setdefault(k.strip(), v.strip())
+            return  # أوّل .env يُوجَد يكفي
+
+
+_load_env_once()
 
 
 # ---------- قراءة الإعداد (الأولوية لـ AZURE_DI_*) ----------

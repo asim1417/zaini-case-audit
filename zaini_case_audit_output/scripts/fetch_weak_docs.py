@@ -51,13 +51,20 @@ def download(fid, dest):
         import gdown
     except Exception:
         return False, "gdown غير مثبّت (pip install gdown)"
-    try:
-        gdown.download("https://drive.google.com/uc?id=%s" % fid, str(dest), quiet=True, fuzzy=True)
-        if dest.exists() and dest.stat().st_size > 0:
-            return True, "نُزّل"
-        return False, "تعذّر (قد يكون غير مشارَك للعموم — نزّله يدوياً)"
-    except Exception as e:
-        return False, "فشل: %s" % str(e)[:80]
+    url = "https://drive.google.com/uc?id=%s" % fid
+    last = ""
+    # جرّب مع fuzzy (gdown الحديث) ثم بدونه (الإصدارات الأقدم) — لا نفترض توقيعاً واحداً.
+    for kw in ({"fuzzy": True}, {}):
+        try:
+            gdown.download(url, str(dest), quiet=True, **kw)
+            if dest.exists() and dest.stat().st_size > 0:
+                return True, "نُزّل"
+            last = "تعذّر (قد يكون غير مشارَك للعموم — نزّله يدوياً)"
+        except TypeError:
+            continue  # هذا الإصدار لا يدعم fuzzy — أعد المحاولة بدونه
+        except Exception as e:
+            last = "فشل: %s" % str(e)[:80]
+    return False, last or "تعذّر التنزيل"
 
 
 def main():
