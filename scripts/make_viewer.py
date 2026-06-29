@@ -11,7 +11,7 @@ make_viewer.py — توليد واجهة تصفّح أمامية (HTML) لمخر
 
 كل المخرجات «مساعدة آلية تحتاج مراجعة بشرية».
 """
-import os, json, csv, io, datetime
+import os, re, json, csv, io, datetime
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -62,6 +62,7 @@ def load_docs(qc):
         except Exception:
             continue
         title = r.get("title", "")
+        dist = _detect_distortion(r.get("full_text", "") or "")
         docs.append({
             "id": r.get("id", ""), "title": title,
             "doc_type": r.get("doc_type", "غير مصنف"),
@@ -69,8 +70,27 @@ def load_docs(qc):
             "card": r.get("card", {}) or {}, "entities": r.get("entities", {}) or {},
             "full_text": r.get("full_text", "") or "",
             "qc": qc.get(title) or qc.get(title.rsplit(".", 1)[0]) or {},
+            "distorted": bool(dist["issues"]), "distReason": "، ".join(dist["issues"]),
         })
     return docs
+
+
+# كشف التشوّه — نفس منطق حزمة الوثائق (رموز غريبة + تكرار حروف + فُتات أسطر).
+_BAD_SYMS = re.compile(r"[�□￯]")
+
+
+def _detect_distortion(text):
+    syms = len(_BAD_SYMS.findall(text))
+    reps = len(re.findall(r"(\S)\1{3,}", text))
+    frags = sum(1 for l in text.split("\n") if 0 < len(l.strip()) <= 2)
+    issues = []
+    if syms:
+        issues.append("رموز غريبة: %d" % syms)
+    if reps:
+        issues.append("تكرار حروف: %d" % reps)
+    if frags > 5:
+        issues.append("فُتات أسطر: %d" % frags)
+    return {"issues": issues}
 
 
 def load_csv(name):
@@ -128,7 +148,7 @@ APP_SHELL = r"""<!DOCTYPE html>
 <style>
   :root{--bg:#f6f7f9;--pane:#fff;--ink:#1f2937;--mut:#6b7280;--line:#e5e7eb;
         --accent:#2563eb;--accent2:#eff6ff;--warn:#fde68a;--chip:#f1f5f9;
-        --tsize:14.5px;--tlh:1.85;--tfam:inherit;--talign:start;}
+        --tsize:14.5px;--tlh:1.95;--tfam:"Traditional Arabic","Simplified Arabic","Arabic Typesetting","Amiri",Tahoma,serif;--talign:start;}
   *{box-sizing:border-box}
   body{margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.7}
   body.reading .side{display:none}
@@ -178,7 +198,8 @@ APP_SHELL = r"""<!DOCTYPE html>
   .txthead{padding:8px 14px;border-bottom:1px solid var(--line);font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .txthead .sp{margin-inline-start:auto}
   .txthead button{padding:3px 8px;border:1px solid var(--line);background:var(--pane);border-radius:7px;cursor:pointer;font-size:12px}
-  .txt{white-space:pre-wrap;word-break:break-word;padding:12px 15px;font-size:var(--tsize);line-height:var(--tlh);font-family:var(--tfam);text-align:var(--talign)}
+  .txt{white-space:pre-wrap;word-break:break-word;padding:12px 15px;font-size:var(--tsize);line-height:var(--tlh);font-family:var(--tfam);text-align:var(--talign);direction:rtl;unicode-bidi:plaintext}
+  .distb{display:inline-block;margin-inline-start:6px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;padding:0 6px;font-size:11px;font-weight:600}
   .txt .ln{display:flex;gap:10px}
   .txt .lno{flex:none;width:38px;color:#9ca3af;text-align:end;user-select:none;display:none}
   body.lines .txt .lno{display:inline-block}
@@ -216,8 +237,8 @@ APP_SHELL = r"""<!DOCTYPE html>
     <span class="grp">نص<button id="fMinus">A−</button><button id="fPlus">A+</button></span>
     <span class="grp">أسطر<button id="lMinus">−</button><button id="lPlus">+</button></span>
     <span class="grp">خط<select id="fFam">
+      <option value="'Traditional Arabic','Simplified Arabic','Arabic Typesetting','Amiri',serif" selected>عربي رسمي (نسخ)</option>
       <option value="inherit">افتراضي</option>
-      <option value="'Traditional Arabic','Amiri',serif">نسخ</option>
       <option value="'Tahoma',Arial,sans-serif">واضح</option>
       <option value="'Courier New',monospace">ثابت</option></select></span>
     <span class="grp"><label><input type="checkbox" id="fJustify"> ضبط</label></span>
@@ -337,7 +358,10 @@ window.startApp = function(){
     return true;
   }
   // ذاكرة مؤقتة للنص المُطبَّع لكل مستند
-  docs.forEach(function(d){d._h=normStr((d.title||'')+' \n '+(d.full_text||''));});
+  docs.forEach(function(d){
+    d._h=normStr((d.title||'')+' \n '+(d.full_text||''));
+    d._distorted=!!d.distorted; d._distReason=d.distReason||'تشوّه';
+  });
 
   var listEl=document.getElementById('list'),detailEl=document.getElementById('detail'),
       qEl=document.getElementById('q'),countEl=document.getElementById('count'),selCountEl=document.getElementById('selCount');
@@ -383,7 +407,7 @@ window.startApp = function(){
       cb.onclick=function(ev){ev.stopPropagation();selected[d.id]=cb.checked;updSel();};
       var body=document.createElement('div');body.style.flex='1';
       var fl=flags[d.id]?' <span class="flag">'+esc(flags[d.id])+'</span>':'';
-      body.innerHTML='<div class="t">'+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+'</div>'+
+      body.innerHTML='<div class="t">'+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
         '<div class="s">'+esc(d.doc_type)+(d.card&&d.card['التاريخ']?' · '+esc(d.card['التاريخ']):'')+fl+'</div>';
       body.onclick=function(){openDoc(d);};
       div.appendChild(cb);div.appendChild(body);return div;
@@ -453,6 +477,7 @@ window.startApp = function(){
         (notes[d.id]?'<div style="margin-top:8px;background:#fffef0;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px">📝 '+esc(notes[d.id])+'</div>':'')+
       '</div>'+
       '<div class="card" style="padding:0"><div class="txthead">النص الكامل'+
+        (d._distorted?'<span class="distb" title="مخرج آلي قد يحتاج إعادة قراءة">⚠ مشوّه — '+esc(d._distReason||'')+'</span>':'')+
         '<span class="sp"></span>'+
         '<button id="mPrev">▲</button><span id="mInfo" style="font-size:12px;color:var(--mut)">—</span><button id="mNext">▼</button>'+
         '<button id="lnToggle">#أسطر</button></div>'+
