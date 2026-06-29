@@ -54,3 +54,8 @@ ocr_comparison_report.txt
 
 # عارض مولّد بالمسار الخطأ في الجذر (بيانات قضية) — لا يُرفع
 /viewer/
+
+# خادم القضية: قاعدة البيانات وبيانات القضية (سرّية — لا تُرفع)
+service/*.db
+case.db
+service/full_documents.jsonl
