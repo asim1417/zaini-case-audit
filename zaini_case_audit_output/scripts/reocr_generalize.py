@@ -31,6 +31,29 @@ DELTA = 8.0
 # انتقائية: لا نعيد OCR لوثيقة جودتها القديمة فوق هذه العتبة (يوفّر صفحات Azure على F0).
 Q_THRESH = float(os.environ.get("REOCR_QUALITY_THRESHOLD", "60"))
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+# حدّ أقصى لعدد الوثائق في الجولة (0 = بلا حدّ). مفيد لباقة F0 المحدودة.
+MAX_DOCS = int(os.environ.get("REOCR_MAX_DOCS", "0") or "0")
+
+
+def fid_of(rec):
+    m = re.search(r"/d/([A-Za-z0-9_-]+)", rec.get("viewUrl", "") or "")
+    return m.group(1) if m else None
+
+
+def build_candidates(recs):
+    """يختار تلقائياً وثائق الحزمة الحالية التي جودتها دون العتبة (استكمال لا إعادة بناء).
+       يرتّب الأسوأ أولاً ليُستفاد من صفحات Azure على ما يحتاجها فعلاً."""
+    out = []
+    for r in recs:
+        fid = fid_of(r)
+        if not fid:
+            continue
+        ft = r.get("full_text", "") or ""
+        q = RP.quality_metrics(ft)["quality"] if ft.strip() else 0.0
+        if q < Q_THRESH:
+            out.append({"fid": fid, "title": (r.get("title", "") or ""), "old_q": round(q, 1)})
+    out.sort(key=lambda c: c["old_q"])
+    return out
 
 
 def main():
@@ -38,10 +61,21 @@ def main():
     recs = [json.loads(l) for l in open(JSONL, encoding="utf-8") if l.strip()]
     by_fid = {}
     for r in recs:
-        m = re.search(r"/d/([A-Za-z0-9_-]+)", r.get("viewUrl", "") or "")
-        if m:
-            by_fid[m.group(1)] = r
-    cands = json.load(open(CAND, encoding="utf-8"))
+        fid = fid_of(r)
+        if fid:
+            by_fid[fid] = r
+    # المرشّحون: من ملف صريح إن وُجد، وإلا اختيار تلقائي من بيانات الحزمة الحالية.
+    if CAND.exists():
+        cands = json.load(open(CAND, encoding="utf-8"))
+        print("مرشّحون من _candidates.json:", len(cands))
+    else:
+        cands = build_candidates(recs)
+        CAND.parent.mkdir(parents=True, exist_ok=True)
+        json.dump(cands, open(CAND, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        print("اختيار تلقائي للوثائق دون عتبة الجودة %.0f → %d وثيقة (الأسوأ أولاً)" % (Q_THRESH, len(cands)))
+    if MAX_DOCS > 0 and len(cands) > MAX_DOCS:
+        print("حدّ الجولة REOCR_MAX_DOCS=%d → معالجة الأسوأ %d فقط؛ الباقي يُؤجَّل لجولة لاحقة." % (MAX_DOCS, MAX_DOCS))
+        cands = cands[:MAX_DOCS]
     # نسخة احتياطية من المصدر قبل أي تعديل
     shutil.copy2(JSONL, BACKUP / ("full_documents.%s.jsonl" % datetime.datetime.now().strftime("%Y%m%d_%H%M%S")))
 
