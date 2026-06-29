@@ -93,3 +93,29 @@ docker run -d -p 8080:8080 --gpus all \
   -v /srv/legal-jobs:/data/jobs legal-audit-service
 ```
 > اختبر على عيّنة عربية قانونية قبل الاعتماد (المعيار المعلن عام/إنجليزي غالباً).
+
+---
+
+## محرّك سحابي اختياري: Azure AI Document Intelligence (قراءة عالية الجودة)
+خدمة Microsoft لقراءة الوثائق (عربي + جداول + تخطيط) بدقّة تفوق سقف Tesseract المحلي.
+
+- **⚠️ سحابي**: تفعيله يرسل الوثائق إلى Azure (تخرج من البيئة المحلية). استخدم منطقة متوافقة
+  وفعّل سياسة عدم استخدام البيانات للتدريب. لا يُفعَّل إلا صراحةً.
+- **التفعيل** (متغيّرات بيئة على الخادم — لا توضع في الكود):
+  ```
+  ENGINE_MODE=azure
+  AZURE_DI_ENDPOINT=https://<المورد>.cognitiveservices.azure.com/
+  AZURE_DI_KEY=<المفتاح>          # الأفضل Managed Identity في الإنتاج
+  AZURE_DI_MODEL=prebuilt-read     # أو prebuilt-layout للجداول
+  ```
+- **التثبيت**: `pip install azure-ai-documentintelligence`.
+- **الدور**: يحلّ محلّ Tesseract لقراءة النص الحرفي عند تفعيله (أعلى جودة)؛ **تراجع آمن**
+  للمحرّك المحلي عند أي تعذّر. الحقل `reocr.engine` يوثّق المحرّك المستخدم لكل وثيقة.
+- **التشغيل بالحاوية**:
+  ```
+  docker run -d -p 8080:8080 \
+    -e ENGINE_MODE=azure \
+    -e AZURE_DI_ENDPOINT=... -e AZURE_DI_KEY=... \
+    -v /srv/legal-jobs:/data/jobs legal-audit-service
+  ```
+> أولويات المحرّكات: `azure` (سحابي عالي الجودة) ← `lift` (مهيكل) ← `tesseract` (محلي افتراضي).

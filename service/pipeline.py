@@ -20,6 +20,10 @@ try:
     import lift_engine            # محرّك استخراج مهيكل اختياري (Datalab lift)
 except Exception:
     lift_engine = None
+try:
+    import azure_engine           # محرّك OCR سحابي اختياري (Azure Document Intelligence)
+except Exception:
+    azure_engine = None
 from pdf2image import convert_from_path   # noqa: E402
 
 
@@ -50,8 +54,15 @@ def run_job(job_dir: Path, log=print):
                 log("تخطّي (نوع غير مدعوم): %s" % f.name); continue
         except Exception as e:
             log("فشل فتح %s: %s" % (f.name, e)); continue
-        texts = [RH.best_page_text(im)[0] for im in pages]
-        full = "\n".join(texts)
+        engine_used = "tesseract-ara-enhanced"
+        full = None
+        if azure_engine and azure_engine.available():     # سحابي عالي الجودة (إن فُعّل)
+            atext = azure_engine.ocr_text(f)
+            if atext and atext.strip():
+                full = atext; engine_used = "azure-document-intelligence"
+                log("azure: قراءة سحابية — %s" % f.name)
+        if full is None:                                  # تراجع آمن للمحرّك المحلي
+            full = "\n".join(RH.best_page_text(im)[0] for im in pages)
         title = f.name
         norm = AZ.normalize_arabic(full)
         dtype = AZ.classify_doc_type(title, norm)
@@ -67,7 +78,7 @@ def run_job(job_dir: Path, log=print):
                      "viewUrl": "", "card": card, "entities": ents,
                      "readable": bool(full.strip()), "full_text": full,
                      "reocr": {"new_q": round(RP.quality_metrics(full)["quality"], 1),
-                               "engine": "tesseract-ara-enhanced", "dpi": RH.DPI, "date": today,
+                               "engine": engine_used, "dpi": RH.DPI, "date": today,
                                "replaced": True, "ingested": True}})
         log("[%d/%d] %s — %s" % (i, len(files), dtype, title[:50]))
 
