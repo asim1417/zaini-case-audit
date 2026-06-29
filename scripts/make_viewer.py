@@ -103,6 +103,53 @@ def load_csv(name):
     return {"header": rows[0], "rows": rows[1:]}
 
 
+def _pynorm(s):
+    out = []
+    for ch in s:
+        c = ord(ch)
+        if 0x064B <= c <= 0x0652 or c in (0x0640, 0x0670):
+            continue
+        if ch in "أإآٱ":
+            out.append("ا")
+        elif ch == "ة":
+            out.append("ه")
+        elif ch == "ى":
+            out.append("ي")
+        elif ch == "ؤ":
+            out.append("و")
+        elif ch == "ئ":
+            out.append("ي")
+        else:
+            out.append(ch.lower())
+    return "".join(out)
+
+
+_AR = re.compile(r"[؀-ۿ]")
+
+
+def _is_phrase(t):
+    """عبارة عربية حقيقية (ترويسة محتملة) لا فُتات أرقام/رموز."""
+    words = [w for w in t.split() if len(_AR.findall(w)) >= 2]
+    body = t.replace(" ", "")
+    return len(words) >= 2 and body and (len(_AR.findall(t)) / len(body)) >= 0.55
+
+
+def _boilerplate(docs):
+    """أسطر الترويسة/التذييل المتكرّرة عبر كثير من الوثائق (boilerplate) — للتخفيت في العرض، بلا حذف.
+       نحصرها في العبارات العربية الحقيقية المتكرّرة، لا فُتات OCR الرقمية."""
+    from collections import Counter
+    cnt = Counter()
+    for d in docs:
+        seen = set()
+        for raw in (d.get("full_text", "") or "").split("\n"):
+            t = _pynorm(raw.strip())
+            if 6 <= len(t) <= 80 and t not in seen and _is_phrase(t):
+                seen.add(t)
+                cnt[t] += 1
+    thr = max(10, int(len(docs) * 0.06))
+    return sorted([t for t, c in cnt.items() if c >= thr])
+
+
 def main():
     qc = load_qc()
     docs = load_docs(qc)
@@ -123,7 +170,8 @@ def main():
         except Exception:
             pass
     data = {"generated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "case_number": case_no, "doc_count": len(docs), "docs": docs, "tables": tables}
+            "case_number": case_no, "doc_count": len(docs), "docs": docs, "tables": tables,
+            "boiler": _boilerplate(docs)}
 
     VIEWER.mkdir(parents=True, exist_ok=True)
     (VIEWER / "case_data.js").write_text("window.CASE = " + json.dumps(data, ensure_ascii=False) + ";\n", encoding="utf-8")
@@ -204,6 +252,8 @@ APP_SHELL = r"""<!DOCTYPE html>
   .txt .lno{flex:none;width:38px;color:#9ca3af;text-align:end;user-select:none;display:none}
   body.lines .txt .lno{display:inline-block}
   .txt .lc{flex:1}
+  .txt .ln.boiler .lc{opacity:.4;font-style:italic}
+  body.hideHdr .txt .ln.boiler{display:none}
   mark{background:#fde68a}
   mark.cur{background:#fb923c;color:#000}
   .empty{color:var(--mut);text-align:center;margin-top:60px}
@@ -244,6 +294,7 @@ APP_SHELL = r"""<!DOCTYPE html>
     <span class="grp"><label><input type="checkbox" id="fJustify"> ضبط</label></span>
     <span class="grp"><label><input type="checkbox" id="fReading"> قراءة</label></span>
     <span class="grp"><label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label></span>
+    <span class="grp"><label title="إخفاء الترويسات/التذييلات المتكرّرة عبر الوثائق"><input type="checkbox" id="fHideHdr"> إخفاء الترويسات</label></span>
     <span class="grp"><button id="lockBtn" title="حفظ نسخة مقفلة بكلمة مرور">🔒 قفل</button></span>
     <span class="grp"><button id="loadBtn" title="فتح بيانات قضية أخرى">📂 قضية</button>
       <input type="file" id="loadFile" accept=".js,.json" style="display:none"></span>
@@ -277,6 +328,7 @@ APP_SHELL = r"""<!DOCTYPE html>
       <div class="row">
         <label><input type="checkbox" id="grp"> تجميع حسب النوع</label>
         <label><input type="checkbox" id="onlyFlag"> المعلّمة فقط</label>
+        <label title="عرض كل المطابقات عبر الوثائق مع مقتطف"><input type="checkbox" id="fAllRes"> كل النتائج</label>
       </div>
       <div class="row">
         <button id="selAll">تحديد المطابق</button>
@@ -352,6 +404,7 @@ window.startApp = function(){
   }
   // توسعة الكلمة إلى عائلة جذرها (إن فُعّل «جذر» وتوفّر المعجم MORPH)
   var MORPH=window.MORPH||null;
+  var BOILER={};(C.boiler||[]).forEach(function(t){BOILER[t]=1;});
   function rootOn(){var c=document.getElementById('fRoot');return MORPH&&c&&c.checked;}
   function expandTerm(t){
     if(!rootOn())return [t];
@@ -377,7 +430,7 @@ window.startApp = function(){
 
   var listEl=document.getElementById('list'),detailEl=document.getElementById('detail'),
       qEl=document.getElementById('q'),countEl=document.getElementById('count'),selCountEl=document.getElementById('selCount');
-  var current=null,curP=null,marks=[],markIdx=-1,_pendingPos='first';
+  var current=null,curP=null,marks=[],markIdx=-1,_pendingPos='first',_pendingMark=null;
 
   function esc(s){return (s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
   function selectedCount(){var n=0;for(var k in selected)if(selected[k])n++;return n;}
@@ -408,9 +461,24 @@ window.startApp = function(){
     if(rev>0||words<5)return '<span class="dot warn" title="جودة متوسطة"></span>';
     return '<span class="dot ok" title="سليم"></span>';}
 
+  function renderAllResults(fs,P){
+    listEl.innerHTML='';var total=0;
+    fs.forEach(function(d){
+      var occ=occList(d,P);if(!occ.length)return;total+=occ.length;
+      var h=document.createElement('div');h.className='grphead';h.textContent=d.title.slice(0,58)+' ('+occ.length+')';
+      h.onclick=function(){_pendingMark=0;openDoc(d);};listEl.appendChild(h);
+      occ.forEach(function(o){var it=document.createElement('div');it.className='item';
+        it.innerHTML='<div class="s" style="font-size:12.5px;line-height:1.75">'+esc(o.pre)+'<mark>'+esc(o.hit)+'</mark>'+esc(o.post)+'</div>';
+        it.onclick=function(){_pendingMark=o.i;openDoc(d);};listEl.appendChild(it);});
+    });
+    countEl.textContent=total+' نتيجة في '+fs.length+' وثيقة';
+    if(!total)listEl.innerHTML='<div class="empty" style="margin-top:30px">لا نتائج.</div>';
+  }
   function renderList(){
     var fs=filtered();countEl.textContent=fs.length+' مطابق';
     document.getElementById('scMatch').textContent=fs.length;document.getElementById('scAll').textContent=docs.length;
+    var _P=parseQuery(qEl.value.trim());var _ar=document.getElementById('fAllRes');
+    if(_ar&&_ar.checked&&!_P.empty){renderAllResults(fs,_P);return;}
     listEl.innerHTML='';
     var grouped=document.getElementById('grp').checked;
     function itemEl(d){
@@ -518,12 +586,26 @@ window.startApp = function(){
       } else {var nextStart=k<ranges.length?ranges[k][0]:text.length;out+=esc(text.slice(c,nextStart));c=nextStart;}
     }
     // ترقيم أسطر
-    var lines=out.split('\n');
-    box.innerHTML=lines.map(function(l,i){return '<div class="ln"><span class="lno">'+(i+1)+'</span><span class="lc">'+l+'</span></div>';}).join('');
+    var lines=out.split('\n');var rawLines=text.split('\n');
+    box.innerHTML=lines.map(function(l,i){var bl=BOILER[normStr((rawLines[i]||'').trim())]?' boiler':'';
+      return '<div class="ln'+bl+'"><span class="lno">'+(i+1)+'</span><span class="lc">'+l+'</span></div>';}).join('');
     marks=Array.prototype.slice.call(box.querySelectorAll('mark'));markIdx=marks.length?0:-1;updMarkInfo();
-    if(marks.length)gotoMark(_pendingPos==='last'?marks.length-1:0);
-    _pendingPos='first';
+    if(marks.length){var tgt=(_pendingMark!=null&&_pendingMark<marks.length)?_pendingMark:(_pendingPos==='last'?marks.length-1:0);gotoMark(tgt);}
+    _pendingPos='first';_pendingMark=null;
   }
+  // مواضع المطابقات لوثيقة (للوحة كل النتائج) — بنفس منطق التظليل
+  function posOf(P){var pos=[];if(P){pos=P.phrases.slice();P.terms.forEach(function(t){pos=pos.concat(expandTerm(t));});pos=pos.filter(Boolean);}return pos;}
+  function rangesOf(text,pos){
+    var nb=buildNorm(text),n=nb.n,map=nb.map,hits=[];
+    pos.forEach(function(term){if(!term)return;var idx=0;while((idx=n.indexOf(term,idx))>=0){hits.push([idx,idx+term.length]);idx+=term.length;}});
+    hits.sort(function(a,b){return a[0]-b[0];});
+    var merged=[];hits.forEach(function(h){if(merged.length&&h[0]<=merged[merged.length-1][1])merged[merged.length-1][1]=Math.max(merged[merged.length-1][1],h[1]);else merged.push(h);});
+    function oi(np){return np<map.length?map[np]:(map.length?map[map.length-1]+1:0);}
+    return merged.map(function(h){return [oi(h[0]),oi(h[1]-1)+1];});
+  }
+  function occList(d,P){var pos=posOf(P);if(!pos.length)return [];var t=d.full_text||'';
+    return rangesOf(t,pos).map(function(rg,i){var a=Math.max(0,rg[0]-32),b=Math.min(t.length,rg[1]+40);
+      return {i:i,pre:(a>0?'…':'')+t.slice(a,rg[0]),hit:t.slice(rg[0],rg[1]),post:t.slice(rg[1],b)+(b<t.length?'…':'')};});}
   function updMarkInfo(){var el=document.getElementById('mInfo');if(!el)return;
     var P=parseQuery(qEl.value.trim());var fl=P.empty?[]:filtered();
     var di=-1;for(var z=0;z<fl.length;z++){if(current&&fl[z].id===current.id){di=z;break;}}
@@ -582,6 +664,8 @@ window.startApp = function(){
   typeSel.onchange=renderList;sortSel.onchange=renderList;
   var fr=document.getElementById('fRoot');if(fr)fr.onchange=function(){renderList();if(current)openDoc(current);};
   document.getElementById('grp').onchange=renderList;document.getElementById('onlyFlag').onchange=renderList;
+  document.getElementById('fAllRes').onchange=renderList;
+  var hh=document.getElementById('fHideHdr');if(hh)hh.onchange=function(){document.body.classList.toggle('hideHdr',this.checked);if(current)openDoc(current);};
   document.getElementById('selAll').onclick=function(){filtered().forEach(function(d){selected[d.id]=true;});updSel();renderList();};
   document.getElementById('selNone').onclick=function(){selected={};updSel();renderList();};
   renderList();updSel();
