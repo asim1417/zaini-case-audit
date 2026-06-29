@@ -3,40 +3,51 @@
 """
 azure_engine.py — محرّك OCR سحابي اختياري عبر Azure AI Document Intelligence.
 
-يقرأ PDF/صورة بدقّة عالية (عربي + جداول + تخطيط) ويعيد النص الكامل بترتيب القراءة،
-وخياراً جداول الصفحة. يُستخدم لرفع جودة التفريغ فوق سقف Tesseract المحلي.
+- يقرأ الإعدادات من البيئة فقط (لا أسرار في الكود).
+- يدعم صيغتي المتغيّرات (الأولوية لـ AZURE_DI_*):
+    AZURE_DI_ENDPOINT / AZURE_DI_KEY / AZURE_DI_MODEL
+    AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT / _KEY / _MODEL
+- لا يعمل إلا ببوابة صريحة: ENGINE_MODE=azure أو AZURE_DI_ENABLED=true (المفتاح وحده لا يكفي).
+- يدعم prebuilt-read و prebuilt-layout. تراجع آمن: عند أي خطأ يُعاد ناتج فيه error بلا أسرار.
+- لا يطبع المفتاح ولا الـendpoint كاملاً.
 
-⚠️ خدمة سحابية: تفعيلها يرسل الوثائق إلى Microsoft Azure (تخرج من البيئة المحلية).
-   لا يُفعَّل إلا صراحةً (ENGINE_MODE=azure) ومع ضبط مفتاح/نقطة عبر متغيّرات البيئة.
-   لا يُخزَّن أي مفتاح في الكود. تراجع آمن: عند أي تعذّر تُعاد None ويستمر المسار المحلي.
-
-متغيّرات البيئة المطلوبة عند التفعيل:
-  ENGINE_MODE=azure
-  AZURE_DI_ENDPOINT=https://<اسم-المورد>.cognitiveservices.azure.com/
-  AZURE_DI_KEY=<المفتاح>            (الأفضل: استخدام Managed Identity بدل المفتاح في الإنتاج)
-  AZURE_DI_MODEL=prebuilt-read       (افتراضي؛ أو prebuilt-layout لاستخراج الجداول)
-
-التثبيت (على الخادم):  pip install azure-ai-documentintelligence
+⚠️ سحابي: التفعيل يرسل الوثيقة إلى Microsoft Azure (تخرج من البيئة المحلية).
 """
 import os
+import re
 import functools
 
 
+# ---------- قراءة الإعداد (الأولوية لـ AZURE_DI_*) ----------
+def _endpoint():
+    return (os.environ.get("AZURE_DI_ENDPOINT")
+            or os.environ.get("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT") or "").strip().rstrip("/")
+
+
+def _key():
+    return (os.environ.get("AZURE_DI_KEY")
+            or os.environ.get("AZURE_DOCUMENT_INTELLIGENCE_KEY") or "").strip()
+
+
+def _model():
+    return (os.environ.get("AZURE_DI_MODEL")
+            or os.environ.get("AZURE_DOCUMENT_INTELLIGENCE_MODEL") or "prebuilt-read").strip()
+
+
 def enabled():
-    """بوابة التفعيل الصريحة: ENGINE_MODE=azure أو AZURE_DI_ENABLED=true.
-    وجود المفتاح وحده لا يُفعّل Azure."""
+    """بوابة التفعيل الصريحة. وجود المفتاح وحده لا يُفعّل."""
     if os.environ.get("ENGINE_MODE", "tesseract").lower() in ("azure", "azure-di"):
         return True
     return os.environ.get("AZURE_DI_ENABLED", "").strip().lower() in ("1", "true", "yes")
 
 
 def configured():
-    """هل بيانات الاعتماد (نقطة + مفتاح) مضبوطة؟"""
-    return bool(os.environ.get("AZURE_DI_ENDPOINT") and os.environ.get("AZURE_DI_KEY"))
+    """نقطة + مفتاح مضبوطان (بأي من الصيغتين)؟"""
+    return bool(_endpoint() and _key())
 
 
 def available():
-    """مفعّل + مُهيّأ + SDK متاح. (المفتاح وحده لا يكفي — يلزم بوابة التفعيل.)"""
+    """مفعّل + مُهيّأ + SDK متاح."""
     if not (enabled() and configured()):
         return False
     try:
@@ -50,47 +61,68 @@ def available():
 def _client():
     from azure.ai.documentintelligence import DocumentIntelligenceClient
     from azure.core.credentials import AzureKeyCredential
-    return DocumentIntelligenceClient(
-        endpoint=os.environ["AZURE_DI_ENDPOINT"].rstrip("/"),
-        credential=AzureKeyCredential(os.environ["AZURE_DI_KEY"]),
-    )
+    return DocumentIntelligenceClient(endpoint=_endpoint(), credential=AzureKeyCredential(_key()))
 
 
-def ocr_text(file_path):
-    """النص الكامل للوثيقة (كل الصفحات) بترتيب القراءة، أو None عند التعذّر."""
-    model = os.environ.get("AZURE_DI_MODEL", "prebuilt-read")
+def _redact(msg):
+    """يخفي المفتاح والـendpoint من أي رسالة خطأ."""
+    s = str(msg)
+    k = _key()
+    if k:
+        s = s.replace(k, "***KEY***")
+    ep = _endpoint()
+    if ep:
+        s = s.replace(ep, "***ENDPOINT***")
+    # احذف أي توقيعات/مفاتيح اشتراك محتملة
+    s = re.sub(r"(Ocp-Apim-Subscription-Key|key|sig|signature)\s*[:=]\s*\S+", r"\1=***", s, flags=re.I)
+    return s[:300]
+
+
+def analyze(path):
+    """يحلّل وثيقة عبر Azure ويعيد ناتجاً موحّداً (بلا أسرار):
+       {engine, model, text, pages, page_count, tables, confidence, error}"""
+    model = _model()
+    out = {"engine": "azure-document-intelligence", "model": model, "text": "",
+           "pages": [], "page_count": 0, "tables": [], "confidence": None, "error": None}
     try:
         client = _client()
-        with open(file_path, "rb") as fh:
+        with open(path, "rb") as fh:
             poller = client.begin_analyze_document(model, body=fh,
                                                    content_type="application/octet-stream")
         result = poller.result()
-        # result.content = النص الكامل بترتيب القراءة (يدعم العربية RTL)
-        return getattr(result, "content", None) or None
-    except Exception:
-        return None
-
-
-def tables(file_path):
-    """يعيد جداول الصفحة [(rows مصفوفة خلايا)] عبر prebuilt-layout، أو None."""
-    try:
-        from azure.ai.documentintelligence import DocumentIntelligenceClient  # noqa
-        client = _client()
-        with open(file_path, "rb") as fh:
-            poller = client.begin_analyze_document("prebuilt-layout", body=fh,
-                                                   content_type="application/octet-stream")
-        result = poller.result()
-        out = []
+        out["text"] = getattr(result, "content", "") or ""
+        pgs = getattr(result, "pages", None) or []
+        out["page_count"] = len(pgs)
+        for p in pgs:
+            lines = getattr(p, "lines", None) or []
+            out["pages"].append("\n".join(getattr(l, "content", "") or "" for l in lines))
+        # الجداول (تظهر مع prebuilt-layout)
         for t in (getattr(result, "tables", None) or []):
-            grid = [["" for _ in range(t.column_count)] for _ in range(t.row_count)]
-            for c in t.cells:
-                if c.row_index < t.row_count and c.column_index < t.column_count:
-                    grid[c.row_index][c.column_index] = (c.content or "").strip()
-            out.append(grid)
-        return out or None
-    except Exception:
+            rc, cc = getattr(t, "row_count", 0), getattr(t, "column_count", 0)
+            grid = [["" for _ in range(cc)] for _ in range(rc)]
+            for cell in getattr(t, "cells", None) or []:
+                ri, ci = getattr(cell, "row_index", 0), getattr(cell, "column_index", 0)
+                if ri < rc and ci < cc:
+                    grid[ri][ci] = (getattr(cell, "content", "") or "").strip()
+            out["tables"].append(grid)
+        # متوسط الثقة (إن توفّر على مستوى الكلمات)
+        confs = [getattr(w, "confidence", None) for p in pgs for w in (getattr(p, "words", None) or [])
+                 if getattr(w, "confidence", None) is not None]
+        out["confidence"] = round(sum(confs) / len(confs), 3) if confs else None
+        return out
+    except Exception as e:
+        out["error"] = "%s: %s" % (type(e).__name__, _redact(e))
+        return out
+
+
+def ocr_text(path):
+    """النص الكامل عبر Azure، أو None عند التعذّر (للاستخدام في pipeline)."""
+    r = analyze(path)
+    if r.get("error") or not (r.get("text") or "").strip():
         return None
+    return r["text"]
 
 
 if __name__ == "__main__":
-    print("ENGINE_MODE=azure متاح؟", available())
+    print("enabled:", enabled(), "| configured:", configured(), "| model:", _model(),
+          "| endpoint set:", bool(_endpoint()))

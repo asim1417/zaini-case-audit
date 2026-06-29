@@ -50,3 +50,4 @@ document.pdf
 azure_ocr_output.txt
 local_ocr_output.txt
 ocr_comparison_report.txt
+*.log

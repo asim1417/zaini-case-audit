@@ -10,6 +10,7 @@ try_azure.py — تجربة فعلية: قراءة document.pdf عبر Azure DI 
 - تراجع آمن: لا NotImplementedError؛ غياب Azure لا يُفشل التشغيل.
 """
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -74,29 +75,52 @@ def main():
         AZ_OUT.write_text("(Azure لم يُشغّل — السبب: %s. استُخدم المحرّك المحلي.)" % why, encoding="utf-8")
         print("→ Azure لم يُشغّل:", why, "— التراجع للمحلي.")
 
-    # 3) تقرير المقارنة
-    lines = ["تقرير مقارنة OCR — Azure مقابل المحلي",
-             "=" * 44,
-             "الملف: document.pdf | الصفحات: %d" % pages,
-             "",
-             "المحرّك المحلي (Tesseract معزّز):",
-             "  جودة: %.1f (%s) | نسبة عربية: %.3f | رموز غريبة: %d | لاتيني داخل عربي: %d | أحرف: %d" % (
-                 qm_local["quality"], RP.grade(qm_local["quality"]), qm_local["ar_ratio"],
-                 qm_local["bad_syms"], qm_local["latin_in_ar"], qm_local["chars"]),
-             ""]
+    # دوال مساعدة للتقييم
+    def amounts(t):
+        return len(re.findall(r"\d[\d.,٬٠-٩]{0,16}\s*(?:ريال|مليون|مليار|[أا]لف|ر\.?س|﷼)", t))
+
+    def nums(t):
+        return len(re.findall(r"\d[\d.,٬]{2,}|[٠-٩]{2,}", t))
+
+    def sample(t):
+        return re.sub(r"\s+", " ", (t or "")[:160]).strip()
+
+    # 3) تقرير المقارنة الشامل
+    L = ["تقرير مقارنة OCR — Azure مقابل المحرّك المحلي",
+         "=" * 46,
+         "الملف: document.pdf",
+         "هل Azure مفعّل؟ %s" % azure_engine.enabled(),
+         "هل Azure مهيأ (نقطة+مفتاح)؟ %s" % azure_engine.configured(),
+         "هل اشتغل Azure فعلياً؟ %s" % azure_ran,
+         "هل حدث fallback للمحلي؟ %s" % (not azure_ran),
+         "",
+         "— المحرّك المحلي (Tesseract معزّز) —",
+         "  الصفحات: %d | طول النص: %d حرف" % (pages, qm_local["chars"]),
+         "  نسبة الحروف العربية: %.3f | رموز غريبة: %d | لاتيني داخل عربي: %d" % (
+             qm_local["ar_ratio"], qm_local["bad_syms"], qm_local["latin_in_ar"]),
+         "  أرقام مكتشفة: %d | مبالغ مكتشفة: %d" % (nums(local_text), amounts(local_text)),
+         "  تقييم الجودة (0-100): %.1f (%s)" % (qm_local["quality"], RP.grade(qm_local["quality"])),
+         "  عيّنة: %s" % sample(local_text),
+         ""]
     if azure_ran:
-        lines += ["Azure Document Intelligence:",
-                  "  جودة: %.1f (%s) | نسبة عربية: %.3f | رموز غريبة: %d | لاتيني داخل عربي: %d | أحرف: %d" % (
-                      qm_azure["quality"], RP.grade(qm_azure["quality"]), qm_azure["ar_ratio"],
-                      qm_azure["bad_syms"], qm_azure["latin_in_ar"], qm_azure["chars"]),
-                  "",
-                  "الفرق في الجودة (Azure − المحلي): %+.1f" % (qm_azure["quality"] - qm_local["quality"]),
-                  "التوصية: %s" % ("اعتماد Azure (أفضل)" if qm_azure["quality"] > qm_local["quality"] + 3
-                                   else "متقاربان — أبقِ المحلي افتراضاً")]
+        L += ["— Azure Document Intelligence —",
+              "  الصفحات: %d | طول النص: %d حرف" % (pages, qm_azure["chars"]),
+              "  نسبة الحروف العربية: %.3f | رموز غريبة: %d | لاتيني داخل عربي: %d" % (
+                  qm_azure["ar_ratio"], qm_azure["bad_syms"], qm_azure["latin_in_ar"]),
+              "  أرقام مكتشفة: %d | مبالغ مكتشفة: %d" % (nums(azure_text), amounts(azure_text)),
+              "  تقييم الجودة (0-100): %.1f (%s)" % (qm_azure["quality"], RP.grade(qm_azure["quality"])),
+              "  عيّنة: %s" % sample(azure_text),
+              "",
+              "الفرق في الجودة (Azure − المحلي): %+.1f" % (qm_azure["quality"] - qm_local["quality"]),
+              "الأفضل للنص العربي: %s" % ("Azure" if qm_azure["quality"] > qm_local["quality"] + 2 else "متقاربان/المحلي")]
     else:
-        lines += ["Azure: لم يُشغّل (راجع azure_ocr_output.txt للسبب).",
-                  "التوصية: اضبط .env بمفتاح صحيح وأعد التشغيل لإجراء المقارنة."]
-    CMP.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        L += ["— Azure —", "  لم يُشغّل (السبب في azure_ocr_output.txt).", ""]
+    # توصية الموديل
+    fin_like = amounts(local_text) >= 3 or "جدول" in local_text
+    L += ["", "توصية الموديل: %s" % (
+        "prebuilt-layout (الوثيقة فيها أرقام/جداول كثيرة)" if fin_like
+        else "prebuilt-read (نص سردي — أسرع وأرخص)")]
+    CMP.write_text("\n".join(L) + "\n", encoding="utf-8")
 
     print("\n================ تقرير try_azure ================")
     print("الصفحات:", pages)
