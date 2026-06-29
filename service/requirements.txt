@@ -6,4 +6,5 @@ openpyxl>=3.1
 pdf2image>=1.17
 Pillow>=10.0
 numpy>=1.24
-# (اختياري للسحابة) azure-ai-documentintelligence>=1.0
+azure-ai-documentintelligence>=1.0   # (للسحابة Azure — اختياري وقت التشغيل)
+python-dotenv>=1.0

@@ -40,3 +40,11 @@ docs/
 zaini_case_audit_output/case_config.json
 zaini_case_audit_output/unreadable/
 zaini_case_audit_output/logs/
+
+# أسرار البيئة المحلية (مفاتيح API) — لا تُرفع
+.env
+.env.local
+
+# مخرجات تجربة Azure (مؤقتة)
+document.pdf
+azure_ocr_output.txt

@@ -22,11 +22,22 @@ import os
 import functools
 
 
+def enabled():
+    """بوابة التفعيل الصريحة: ENGINE_MODE=azure أو AZURE_DI_ENABLED=true.
+    وجود المفتاح وحده لا يُفعّل Azure."""
+    if os.environ.get("ENGINE_MODE", "tesseract").lower() in ("azure", "azure-di"):
+        return True
+    return os.environ.get("AZURE_DI_ENABLED", "").strip().lower() in ("1", "true", "yes")
+
+
+def configured():
+    """هل بيانات الاعتماد (نقطة + مفتاح) مضبوطة؟"""
+    return bool(os.environ.get("AZURE_DI_ENDPOINT") and os.environ.get("AZURE_DI_KEY"))
+
+
 def available():
-    """مفعّل ومتاح؟ (بوابة صريحة + بيانات اعتماد + SDK)."""
-    if os.environ.get("ENGINE_MODE", "tesseract").lower() not in ("azure", "azure-di"):
-        return False
-    if not (os.environ.get("AZURE_DI_ENDPOINT") and os.environ.get("AZURE_DI_KEY")):
+    """مفعّل + مُهيّأ + SDK متاح. (المفتاح وحده لا يكفي — يلزم بوابة التفعيل.)"""
+    if not (enabled() and configured()):
         return False
     try:
         _client()
