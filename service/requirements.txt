@@ -8,3 +8,5 @@ Pillow>=10.0
 numpy>=1.24
 azure-ai-documentintelligence>=1.0   # (للسحابة Azure — اختياري وقت التشغيل)
 python-dotenv>=1.0
+
+azure-core

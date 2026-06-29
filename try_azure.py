@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-try_azure.py — تجربة فعلية لقراءة document.pdf عبر Azure Document Intelligence.
+try_azure.py — تجربة فعلية: قراءة document.pdf عبر Azure DI + مقارنتها بالمحرّك المحلي.
 
-- يقرأ الإعداد من .env المحلي (لا أسرار في الكود).
-- إن كان Azure مُفعّلاً ومُهيّأ → يقرأ عبر Azure.
-- وإلا (غير مُفعّل/غير مُهيّأ/SDK غير مثبّت أو فشل الاتصال) → يتراجع للمحرّك المحلي
-  الحقيقي (Tesseract معزّز) — لا NotImplementedError.
-- يكتب الناتج في azure_ocr_output.txt ويطبع تقريراً (المحرّك/الصفحات/تقييم العربية).
-الملف المُجرَّب: document.pdf (غير سري). لا تُمرَّر أسرار في المحادثة.
+- يقرأ الإعداد من .env المحلي (لا أسرار في الكود ولا تُطبع).
+- يشغّل المحرّك المحلي دائماً (Tesseract معزّز) → local_ocr_output.txt.
+- إن كان Azure مُفعّلاً ومُهيّأ → يقرأ عبر Azure → azure_ocr_output.txt (وإلا ملاحظة سبب).
+- يكتب مقارنة الجودة → ocr_comparison_report.txt، ويطبع تقريراً (بلا أي مفتاح).
+- تراجع آمن: لا NotImplementedError؛ غياب Azure لا يُفشل التشغيل.
 """
 import os
 import sys
@@ -18,7 +17,6 @@ ROOT = Path(__file__).resolve().parent
 ENGINE = ROOT / "zaini_case_audit_output" / "scripts"
 sys.path.insert(0, str(ENGINE))
 
-# تحميل .env إن وُجد (python-dotenv اختياري؛ وإلا قراءة يدوية بسيطة)
 ENV = ROOT / ".env"
 try:
     from dotenv import load_dotenv
@@ -37,54 +35,80 @@ import reocr_hard as RH
 from pdf2image import convert_from_path
 
 DOC = ROOT / "document.pdf"
-OUT = ROOT / "azure_ocr_output.txt"
+AZ_OUT = ROOT / "azure_ocr_output.txt"
+LOC_OUT = ROOT / "local_ocr_output.txt"
+CMP = ROOT / "ocr_comparison_report.txt"
 
 
 def main():
     if not DOC.exists():
-        print("✗ لم يُعثر على document.pdf في:", DOC)
-        sys.exit(1)
+        print("✗ لم يُعثر على document.pdf"); sys.exit(1)
 
-    # عدد الصفحات (عبر تحويلها لصور — يلزم أيضاً للتراجع المحلي)
     images = convert_from_path(str(DOC), dpi=RH.DPI)
     pages = len(images)
 
-    engine = None
-    text = None
+    # 1) المحرّك المحلي (دائماً)
+    local_text = "\n".join(RH.best_page_text(im)[0] for im in images)
+    LOC_OUT.write_text(local_text, encoding="utf-8")
+    qm_local = RP.quality_metrics(local_text)
+
+    # 2) Azure (إن فُعّل ومُهيّأ)
     print("ENGINE_MODE =", os.environ.get("ENGINE_MODE", "(غير مضبوط)"),
           "| AZURE_DI_ENABLED =", os.environ.get("AZURE_DI_ENABLED", "(غير مضبوط)"))
-    print("Azure مُفعّل؟", azure_engine.enabled(), "| مُهيّأ (نقطة+مفتاح)؟", azure_engine.configured())
-
+    print("Azure مُفعّل؟", azure_engine.enabled(), "| مُهيّأ (نقطة+مفتاح)؟", azure_engine.configured(),
+          "| متاح (SDK+اتصال)؟", azure_engine.available())
+    azure_text, qm_azure, azure_ran = None, None, False
     if azure_engine.available():
         print("→ القراءة عبر Azure Document Intelligence ...")
-        text = azure_engine.ocr_text(DOC)
-        if text and text.strip():
-            engine = "azure-document-intelligence"
+        azure_text = azure_engine.ocr_text(DOC)
+        if azure_text and azure_text.strip():
+            azure_ran = True
+            qm_azure = RP.quality_metrics(azure_text)
+            AZ_OUT.write_text(azure_text, encoding="utf-8")
         else:
-            print("⚠ Azure لم يُعِد نصاً — تراجع للمحلي.")
+            AZ_OUT.write_text("(Azure لم يُعِد نصاً — راجع الاتصال/الموديل.)", encoding="utf-8")
+    else:
+        why = ("غير مُفعّل (ENGINE_MODE=azure أو AZURE_DI_ENABLED=true)" if not azure_engine.enabled()
+               else "غير مُهيّأ (AZURE_DI_ENDPOINT/AZURE_DI_KEY في .env)" if not azure_engine.configured()
+               else "SDK غير مثبّت أو تعذّر الاتصال")
+        AZ_OUT.write_text("(Azure لم يُشغّل — السبب: %s. استُخدم المحرّك المحلي.)" % why, encoding="utf-8")
+        print("→ Azure لم يُشغّل:", why, "— التراجع للمحلي.")
 
-    if text is None or not text.strip():
-        why = ("غير مُفعّل (اضبط ENGINE_MODE=azure أو AZURE_DI_ENABLED=true)"
-               if not azure_engine.enabled() else
-               "غير مُهيّأ (AZURE_DI_ENDPOINT/AZURE_DI_KEY في .env)"
-               if not azure_engine.configured() else
-               "تعذّر الاتصال/SDK")
-        print("→ التراجع للمحرّك المحلي (Tesseract معزّز). السبب: %s" % why)
-        text = "\n".join(RH.best_page_text(im)[0] for im in images)
-        engine = "local-fallback (tesseract-ara-enhanced)"
+    # 3) تقرير المقارنة
+    lines = ["تقرير مقارنة OCR — Azure مقابل المحلي",
+             "=" * 44,
+             "الملف: document.pdf | الصفحات: %d" % pages,
+             "",
+             "المحرّك المحلي (Tesseract معزّز):",
+             "  جودة: %.1f (%s) | نسبة عربية: %.3f | رموز غريبة: %d | لاتيني داخل عربي: %d | أحرف: %d" % (
+                 qm_local["quality"], RP.grade(qm_local["quality"]), qm_local["ar_ratio"],
+                 qm_local["bad_syms"], qm_local["latin_in_ar"], qm_local["chars"]),
+             ""]
+    if azure_ran:
+        lines += ["Azure Document Intelligence:",
+                  "  جودة: %.1f (%s) | نسبة عربية: %.3f | رموز غريبة: %d | لاتيني داخل عربي: %d | أحرف: %d" % (
+                      qm_azure["quality"], RP.grade(qm_azure["quality"]), qm_azure["ar_ratio"],
+                      qm_azure["bad_syms"], qm_azure["latin_in_ar"], qm_azure["chars"]),
+                  "",
+                  "الفرق في الجودة (Azure − المحلي): %+.1f" % (qm_azure["quality"] - qm_local["quality"]),
+                  "التوصية: %s" % ("اعتماد Azure (أفضل)" if qm_azure["quality"] > qm_local["quality"] + 3
+                                   else "متقاربان — أبقِ المحلي افتراضاً")]
+    else:
+        lines += ["Azure: لم يُشغّل (راجع azure_ocr_output.txt للسبب).",
+                  "التوصية: اضبط .env بمفتاح صحيح وأعد التشغيل لإجراء المقارنة."]
+    CMP.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    OUT.write_text(text or "", encoding="utf-8")
-
-    # تقييم أولي للنص العربي
-    m = RP.quality_metrics(text or "")
     print("\n================ تقرير try_azure ================")
-    print("المحرّك المستخدم      :", engine)
-    print("عدد الصفحات          :", pages)
-    print("أُنشئ azure_ocr_output.txt:", OUT.exists(), "(%d حرف)" % len(text or ""))
-    print("نسبة الحروف العربية   :", m["ar_ratio"])
-    print("درجة جودة النص (0-100):", m["quality"], "(%s)" % RP.grade(m["quality"]))
-    print("رموز غريبة            :", m["bad_syms"], "| لاتيني داخل عربي:", m["latin_in_ar"])
-    print("عيّنة (أول 200 حرف)   :", (text or "")[:200].replace("\n", " "))
+    print("الصفحات:", pages)
+    print("local_ocr_output.txt:", LOC_OUT.exists(), "(%d حرف)" % len(local_text))
+    print("azure_ocr_output.txt:", AZ_OUT.exists())
+    print("ocr_comparison_report.txt:", CMP.exists())
+    print("جودة المحلي: %.1f (%s)" % (qm_local["quality"], RP.grade(qm_local["quality"])))
+    if azure_ran:
+        print("جودة Azure: %.1f (%s) | الفرق: %+.1f" % (
+            qm_azure["quality"], RP.grade(qm_azure["quality"]), qm_azure["quality"] - qm_local["quality"]))
+    else:
+        print("Azure: لم يُشغّل (انظر السبب في azure_ocr_output.txt)")
     print("=================================================")
 
 
