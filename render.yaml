@@ -1,0 +1,21 @@
+# render.yaml — مخطّط نشر شبه آلي على Render لواجهة القضية.
+# Render → New → Blueprint → اربط هذا المستودع (الخاص) → سيقرأ هذا الملف تلقائياً.
+# لا يحتوي أي سرّ ولا بيانات قضية.
+services:
+  - type: web
+    name: zaini-case
+    runtime: python
+    plan: free
+    buildCommand: pip install -r service/requirements.txt
+    startCommand: bash service/start_case_server.sh
+    envVars:
+      # كلمة مرور الدخول — اضبطها يدوياً في لوحة Render (sync:false = لا تُحفظ بالكود)
+      - key: APP_PASSWORD
+        sync: false
+      # مسار بيانات القضية: ارفع full_documents.jsonl كـ Secret File على هذا المسار
+      - key: CASE_JSONL
+        value: /etc/secrets/full_documents.jsonl
+      - key: CASE_DB
+        value: /tmp/case.db
+      - key: PYTHON_VERSION
+        value: "3.12.6"
