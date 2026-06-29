@@ -130,7 +130,7 @@ def main():
 
     shell_js = json.dumps(APP_SHELL).replace("</", "<\\/")
     # لا نستدعي startApp هنا (قد يسبق تعريفه)؛ الاستدعاء في نهاية سكربت التطبيق
-    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>')
+    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>\n<script src="case_morph.js"></script>')
     # نستبدل أول وسم فقط؛ الوسم الثاني داخل دالة القفل يبقى نصاً ليعمل وقت التشغيل
     index_html = APP_SHELL.replace("__BOOTSTRAP__", boot, 1)
     (VIEWER / "index.html").write_text(index_html, encoding="utf-8")
@@ -243,6 +243,7 @@ APP_SHELL = r"""<!DOCTYPE html>
       <option value="'Courier New',monospace">ثابت</option></select></span>
     <span class="grp"><label><input type="checkbox" id="fJustify"> ضبط</label></span>
     <span class="grp"><label><input type="checkbox" id="fReading"> قراءة</label></span>
+    <span class="grp"><label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label></span>
     <span class="grp"><button id="lockBtn" title="حفظ نسخة مقفلة بكلمة مرور">🔒 قفل</button></span>
     <span class="grp"><button id="loadBtn" title="فتح بيانات قضية أخرى">📂 قضية</button>
       <input type="file" id="loadFile" accept=".js,.json" style="display:none"></span>
@@ -349,12 +350,23 @@ window.startApp = function(){
     }
     return {phrases:phrases,terms:terms,nots:nots,orMode:orMode,empty:(!phrases.length&&!terms.length&&!nots.length)};
   }
+  // توسعة الكلمة إلى عائلة جذرها (إن فُعّل «جذر» وتوفّر المعجم MORPH)
+  var MORPH=window.MORPH||null;
+  function rootOn(){var c=document.getElementById('fRoot');return MORPH&&c&&c.checked;}
+  function expandTerm(t){
+    if(!rootOn())return [t];
+    var ids=MORPH.w2r[t];if(!ids)return [t];
+    var s={};s[t]=1;for(var i=0;i<ids.length;i++){var a=MORPH.r2w[ids[i]]||[];for(var j=0;j<a.length;j++)s[a[j]]=1;}
+    return Object.keys(s);
+  }
+  function termFamilies(P){return P.terms.map(expandTerm);}
   function matchDoc(P,normHay){
     for(var i=0;i<P.nots.length;i++)if(P.nots[i]&&normHay.indexOf(P.nots[i])>=0)return false;
-    var pos=P.phrases.concat(P.terms);
-    if(!pos.length)return true;
-    if(P.orMode){for(var j=0;j<pos.length;j++)if(normHay.indexOf(pos[j])>=0)return true;return false;}
-    for(var k=0;k<pos.length;k++)if(normHay.indexOf(pos[k])<0)return false;
+    var fams=P.phrases.map(function(p){return [p];}).concat(termFamilies(P));
+    if(!fams.length)return true;
+    function famHit(f){for(var x=0;x<f.length;x++)if(f[x]&&normHay.indexOf(f[x])>=0)return true;return false;}
+    if(P.orMode){for(var j=0;j<fams.length;j++)if(famHit(fams[j]))return true;return false;}
+    for(var k=0;k<fams.length;k++)if(!famHit(fams[k]))return false;
     return true;
   }
   // ذاكرة مؤقتة للنص المُطبَّع لكل مستند
@@ -488,7 +500,7 @@ window.startApp = function(){
 
   function renderText(d,P){
     var box=document.getElementById('txtBox');var text=d.full_text||'(لا يوجد نص مستخرج)';
-    var pos=P?P.phrases.concat(P.terms).filter(Boolean):[];
+    var pos=[];if(P){pos=P.phrases.slice();P.terms.forEach(function(t){pos=pos.concat(expandTerm(t));});pos=pos.filter(Boolean);}
     var nb=buildNorm(text);var n=nb.n,map=nb.map;
     var hits=[];
     pos.forEach(function(term){if(!term)return;var idx=0;while((idx=n.indexOf(term,idx))>=0){hits.push([idx,idx+term.length]);idx+=term.length;}});
@@ -568,6 +580,7 @@ window.startApp = function(){
   // Enter = النتيجة التالية، Shift+Enter = السابقة (مثل Word)
   qEl.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();if(e.shiftKey)navPrev();else navNext();}};
   typeSel.onchange=renderList;sortSel.onchange=renderList;
+  var fr=document.getElementById('fRoot');if(fr)fr.onchange=function(){renderList();if(current)openDoc(current);};
   document.getElementById('grp').onchange=renderList;document.getElementById('onlyFlag').onchange=renderList;
   document.getElementById('selAll').onclick=function(){filtered().forEach(function(d){selected[d.id]=true;});updSel();renderList();};
   document.getElementById('selNone').onclick=function(){selected={};updSel();renderList();};
