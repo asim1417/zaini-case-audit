@@ -197,6 +197,20 @@ APP_SHELL = r"""<!DOCTYPE html>
   :root{--bg:#f6f7f9;--pane:#fff;--ink:#1f2937;--mut:#6b7280;--line:#e5e7eb;
         --accent:#2563eb;--accent2:#eff6ff;--warn:#fde68a;--chip:#f1f5f9;
         --tsize:18px;--tlh:1.9;--tfam:"Traditional Arabic","Simplified Arabic","Arabic Typesetting","Amiri",Tahoma,serif;--talign:start;}
+  body.dark{--bg:#0f172a;--pane:#1e293b;--ink:#e5e7eb;--mut:#94a3b8;--line:#334155;--accent:#3b82f6;--accent2:#1e3a5f;--chip:#243449}
+  body.dark mark{background:#854d0e;color:#fff}
+  body.paper{--bg:#efe6d2;--pane:#fbf5e6;--ink:#3a2f1d;--mut:#8a7a5c;--line:#e0d4ba;--accent2:#f3ead2}
+  /* تلوين ذكي للنص */
+  .e-amt{color:#15803d;font-weight:600}
+  .e-date{color:#1d4ed8}
+  .e-num{color:#7c3aed}
+  .e-party{color:#c2410c;font-weight:600}
+  body.dark .e-amt{color:#4ade80}body.dark .e-date{color:#93c5fd}body.dark .e-num{color:#c4b5fd}body.dark .e-party{color:#fdba74}
+  .statwrap{padding:6px 16px 30px}.statwrap h3{margin:14px 0 6px}
+  .sbar{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13.5px}
+  .sbar .lbl{width:170px;flex:none;cursor:pointer}.sbar .lbl:hover{color:var(--accent)}
+  .sbar .bb{height:16px;background:var(--accent);border-radius:4px;min-width:3px}
+  .sbar .cnt{color:var(--mut);font-size:12px}
   *{box-sizing:border-box}
   body{margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.7}
   body.reading .side{display:none}
@@ -276,7 +290,9 @@ APP_SHELL = r"""<!DOCTYPE html>
   .bars{display:flex;flex-direction:column;gap:4px;margin:6px 0 14px}
   .bars .b{display:flex;align-items:center;gap:8px;font-size:12px}
   .bars .bar2{height:14px;background:var(--accent);border-radius:3px}
-  @media(max-width:760px){.wrap{flex-direction:column;height:auto}.side{width:auto}main{height:auto}}
+  @media(max-width:760px){.wrap{flex-direction:column;height:auto}.side{width:auto;max-height:46vh}main{height:auto}
+    header{flex-wrap:wrap}header h1{font-size:14px}.bar{font-size:11px;gap:4px}.tabs{overflow-x:auto;flex-wrap:nowrap}
+    .kv{grid-template-columns:1fr}.txt{font-size:16px}}
 </style>
 </head>
 <body>
@@ -295,6 +311,8 @@ APP_SHELL = r"""<!DOCTYPE html>
     <span class="grp"><label><input type="checkbox" id="fReading"> قراءة</label></span>
     <span class="grp"><label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label></span>
     <span class="grp"><label title="إخفاء الترويسات/التذييلات المتكرّرة عبر الوثائق"><input type="checkbox" id="fHideHdr"> إخفاء الترويسات</label></span>
+    <span class="grp"><label title="تلوين المبالغ/التواريخ/الأطراف/الأرقام"><input type="checkbox" id="fColor" checked> تلوين</label></span>
+    <span class="grp">سمة<select id="fTheme"><option value="">فاتح</option><option value="dark">ليلي</option><option value="paper">ورقي</option></select></span>
     <span class="grp"><button id="lockBtn" title="حفظ نسخة مقفلة بكلمة مرور">🔒 قفل</button></span>
     <span class="grp"><button id="loadBtn" title="فتح بيانات قضية أخرى">📂 قضية</button>
       <input type="file" id="loadFile" accept=".js,.json" style="display:none"></span>
@@ -311,6 +329,7 @@ APP_SHELL = r"""<!DOCTYPE html>
   <div class="tab" data-view="grounds">أسباب النقض</div>
   <div class="tab" data-view="laws">الأنظمة</div>
   <div class="tab" data-view="milestones">المحطات</div>
+  <div class="tab" data-view="stats">إحصاءات</div>
 </div>
 
 <div id="docsView" class="wrap">
@@ -334,6 +353,7 @@ APP_SHELL = r"""<!DOCTYPE html>
         <button id="selAll">تحديد المطابق</button>
         <button id="selNone">إلغاء</button>
         <button id="exportBtn" class="btn-export">تصدير ▾</button>
+        <button id="cmpBtn" title="قارن وثيقتين محدّدتين جنباً إلى جنب">⇄ قارن</button>
         <span class="selcount" id="selCount">المحدد: 0</span>
       </div>
       <div class="count" id="count"></div>
@@ -566,8 +586,22 @@ window.startApp = function(){
     detailEl.scrollTop=0;highlightList();bindDetail(d);
   }
 
+  function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+  function makeColorizer(d){
+    var c=document.getElementById('fColor');if(c&&!c.checked)return function(s){return s;};
+    var e=d.entities||{};
+    var names=[].concat(e.parties||[],e.other_actors||[],e.company||[]).filter(Boolean)
+              .map(function(x){return reEsc(esc(x));}).sort(function(a,b){return b.length-a.length;});
+    var nameAlt=names.length?names.join('|'):'(?!)';
+    var re=new RegExp('('+nameAlt+')'
+      +'|((?:[٠-٩]|\\d)[٠-٩\\d.,٬]*\\s*(?:ريال|ر\\.?س|مليون|مليار|ألف|الف|﷼))'
+      +'|(\\d{1,2}\\s*[\\/\\-]\\s*\\d{1,2}\\s*[\\/\\-]\\s*\\d{2,4}|\\d{3,4}\\s*هـ|\\d{4}\\s*م)'
+      +'|((?:[٠-٩]|\\d){6,})','g');
+    return function(s){return s.replace(re,function(m,a,b,c2,d2){
+      return '<span class="e-'+(a?'party':b?'amt':c2?'date':'num')+'">'+m+'</span>';});};
+  }
   function renderText(d,P){
-    var box=document.getElementById('txtBox');var text=d.full_text||'(لا يوجد نص مستخرج)';
+    var box=document.getElementById('txtBox');var text=d.full_text||'(لا يوجد نص مستخرج)';var colorize=makeColorizer(d);
     var pos=[];if(P){pos=P.phrases.slice();P.terms.forEach(function(t){pos=pos.concat(expandTerm(t));});pos=pos.filter(Boolean);}
     var nb=buildNorm(text);var n=nb.n,map=nb.map;
     var hits=[];
@@ -583,7 +617,7 @@ window.startApp = function(){
     for(var c=0;c<text.length;){
       if(k<ranges.length&&c===ranges[k][0]){
         out+='<mark>'+esc(text.slice(ranges[k][0],ranges[k][1]))+'</mark>';c=ranges[k][1];k++;
-      } else {var nextStart=k<ranges.length?ranges[k][0]:text.length;out+=esc(text.slice(c,nextStart));c=nextStart;}
+      } else {var nextStart=k<ranges.length?ranges[k][0]:text.length;out+=colorize(esc(text.slice(c,nextStart)));c=nextStart;}
     }
     // ترقيم أسطر
     var lines=out.split('\n');var rawLines=text.split('\n');
@@ -666,6 +700,21 @@ window.startApp = function(){
   document.getElementById('grp').onchange=renderList;document.getElementById('onlyFlag').onchange=renderList;
   document.getElementById('fAllRes').onchange=renderList;
   var hh=document.getElementById('fHideHdr');if(hh)hh.onchange=function(){document.body.classList.toggle('hideHdr',this.checked);if(current)openDoc(current);};
+  var fc=document.getElementById('fColor');if(fc)fc.onchange=function(){if(current)openDoc(current);};
+  var ft=document.getElementById('fTheme');
+  function applyTheme(v){document.body.classList.remove('dark','paper');if(v)document.body.classList.add(v);}
+  if(ft){var svt=LS.get('theme','');ft.value=svt;applyTheme(svt);ft.onchange=function(){applyTheme(ft.value);LS.set('theme',ft.value);};}
+  var cmp=document.getElementById('cmpBtn');if(cmp)cmp.onclick=function(){
+    var ids=Object.keys(selected).filter(function(k){return selected[k];});
+    if(ids.length!==2){alert('حدّد وثيقتين بالضبط للمقارنة.');return;}
+    var pair=ids.map(function(id){return docs.filter(function(d){return d.id===id;})[0];}).filter(Boolean);
+    if(pair.length!==2)return;
+    function col(d){var cz=makeColorizer(d);
+      return '<div style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;overflow:hidden">'+
+        '<div class="txthead">'+esc(d.title.slice(0,60))+'</div>'+
+        '<div class="txt" style="max-height:74vh;overflow:auto">'+cz(esc(d.full_text||'(لا نص)')) +'</div></div>';}
+    detailEl.innerHTML='<div style="display:flex;gap:10px;padding:8px">'+col(pair[0])+col(pair[1])+'</div>';
+  };
   document.getElementById('selAll').onclick=function(){filtered().forEach(function(d){selected[d.id]=true;});updSel();renderList();};
   document.getElementById('selNone').onclick=function(){selected={};updSel();renderList();};
   renderList();updSel();
@@ -761,7 +810,29 @@ window.startApp = function(){
     var rows=t.rows.slice(0,12).map(function(r){var num=parseFloat(String(r[idxV]).replace(/[^\d.]/g,''))||0;return {label:r[idxV],v:num};});
     var max=Math.max.apply(null,rows.map(function(x){return x.v;}))||1;
     return '<div class="bars">'+rows.map(function(x){return '<div class="b"><span style="width:120px">'+esc(x.label)+'</span><span class="bar2" style="width:'+(Math.max(2,260*x.v/max))+'px"></span></div>';}).join('')+'</div>';}
-  function showTable(key){var t=(C.tables||{})[key];
+  function renderStats(){
+    function group(fn){var m={};docs.forEach(function(d){var k=fn(d)||'—';m[k]=(m[k]||0)+1;});return m;}
+    function bars(title,m,onClick){
+      var keys=Object.keys(m).sort(function(a,b){return m[b]-m[a];});var mx=Math.max.apply(null,keys.map(function(k){return m[k];}))||1;
+      return '<h3>'+title+'</h3>'+keys.map(function(k){var id=onClick?(' data-k="'+esc(k)+'"'):'';
+        return '<div class="sbar"><span class="lbl"'+(onClick?' style="text-decoration:underline dotted"':'')+id+'>'+esc(k)+'</span>'+
+          '<span class="bb" style="width:'+Math.max(3,260*m[k]/mx)+'px"></span><span class="cnt">'+m[k]+'</span></div>';}).join('');}
+    function yearOf(d){var s=(d.card&&d.card['التاريخ'])||'';var m=s.match(/(1[34]\d\d)|((?:19|20)\d\d)/);return m?m[0]:'بدون تاريخ';}
+    function qualOf(d){if(d._distorted)return 'مشوّه';var q=(d.qc||{}).status;return q||'غير مقيّم';}
+    var html='<div class="statwrap">'+
+      bars('حسب النوع ('+docs.length+' وثيقة) — اضغط للتصفية',group(function(d){return d.doc_type;}),true)+
+      bars('حسب السنة',group(yearOf),false)+
+      bars('حسب الجودة',group(qualOf),false)+'</div>';
+    tableView.innerHTML=html;
+    tableView.querySelectorAll('.sbar .lbl[data-k]').forEach(function(el){el.onclick=function(){
+      typeSel.value=el.getAttribute('data-k');
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+      document.querySelector('.tab[data-view="docs"]').classList.add('active');curView='docs';
+      docsView.style.display='';tableView.style.display='none';quotesView.style.display='none';renderList();};});
+  }
+  function showTable(key){
+    if(key==='stats'){renderStats();return;}
+    var t=(C.tables||{})[key];
     if(!t){tableView.innerHTML='<div class="empty" style="margin-top:40px">لا جدول.</div>';return;}
     var extra='';if(key==='amounts')extra='<h4>أكبر المبالغ (رسم)</h4>'+amountsChart(t);
     var h=extra+'<table><thead><tr>'+t.header.map(function(x){return '<th>'+esc(x)+'</th>';}).join('')+'</tr></thead><tbody>';
