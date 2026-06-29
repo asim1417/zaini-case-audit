@@ -370,6 +370,18 @@ PART_GROUPS = [
 ]
 
 
+# وضع مخفّف للمستند الواحد: بطاقات كأسطر بدل جداول + إيقاف التدقيق الخلفي (يمنع تجمّد Word).
+LIGHT = os.environ.get("PACKAGE_LIGHT", "").strip().lower() in ("1", "true", "yes")
+
+
+def _disable_proofing(doc):
+    """يوقف عرض/حساب التدقيق الإملائي والنحوي الخلفي — يبطّئ Word بشدّة مع العربية الكثيرة."""
+    s = doc.settings.element
+    for tag in ("w:hideSpellingErrors", "w:hideGrammaticalErrors"):
+        if s.find(qn(tag)) is None:
+            s.append(OxmlElement(tag))
+
+
 def _index_table(doc, docs):
     t = doc.add_table(rows=1, cols=len(_IDX_HEAD)); t.style = "Table Grid"; t.allow_autofit = False
     t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
@@ -397,11 +409,16 @@ def _render_doc(doc, d, dup_titles, bid):
     add_bookmark(h, d["id"], bid[0]); bid[0] += 1
     LC.add_par(doc, "بطاقة الوثيقة", size=20, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
     rows = [(k, v) for k, v in card_fields(d, dup_titles) if str(v).strip()]
-    t = doc.add_table(rows=len(rows), cols=2); t.style = "Table Grid"
-    t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
-    for i, (k, v) in enumerate(rows):
-        _cell(t.rows[i].cells[0], k, bold=True, size=15)
-        _cell(t.rows[i].cells[1], str(v)[:400], size=15)
+    if LIGHT:
+        # أسطر منسّقة بدل جدول — يخفّف تخطيط Word كثيراً (لا تجمّد) ويحفظ نفس الحقول.
+        for k, v in rows:
+            LC.add_par(doc, "%s: %s" % (k, str(v)[:400]), size=14)
+    else:
+        t = doc.add_table(rows=len(rows), cols=2); t.style = "Table Grid"
+        t._tbl.tblPr.append(OxmlElement("w:bidiVisual"))
+        for i, (k, v) in enumerate(rows):
+            _cell(t.rows[i].cells[0], k, bold=True, size=15)
+            _cell(t.rows[i].cells[1], str(v)[:400], size=15)
     doc.add_paragraph("")
     if is_financial(d):
         add_financial_table(doc, d)
@@ -470,6 +487,7 @@ def build_docx(docs, dup_titles):
     _index_table(doc, docs)
     for d in docs:
         _render_doc(doc, d, dup_titles, bid)
+    _disable_proofing(doc)
     doc.save(str(OUTDIR / "حزمة_الوثائق.docx"))
 
 
