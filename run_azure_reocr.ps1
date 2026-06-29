@@ -16,9 +16,10 @@ foreach ($c in @("python", "py")) {
 if (-not $PY) { Write-Host "X Python غير مثبّت."; exit 1 }
 Write-Host ("OK " + (& $PY --version 2>&1))
 
-Write-Host "=== 2) تثبيت المتطلبات ==="
+Write-Host "=== 2) تثبيت المتطلبات (+ gdown للتنزيل من Drive) ==="
 & $PY -m pip install -r service/requirements.txt
 if ($LASTEXITCODE -ne 0) { Write-Host "X فشل تثبيت المتطلبات"; exit 1 }
+& $PY -m pip install gdown | Out-Null
 
 Write-Host "=== 3) التحقق من .env (Azure) ==="
 if (-not (Test-Path ".env")) {
@@ -45,21 +46,21 @@ if (-not (Test-Path $JSONL)) {
     exit 1
 }
 Write-Host "OK full_documents.jsonl موجود"
-if (-not (Test-Path $BATCH)) {
-    Write-Host "!! تنبيه: مجلد ملفات المصدر غير موجود:"
-    Write-Host "   $BATCH"
-    Write-Host "   ضع ملفات PDF/صور الوثائق الضعيفة هناك باسم <fileId>.pdf؛"
-    Write-Host "   الوثائق بلا مصدر ستُبقى كما هي (لن تُعاد OCR)."
-}
 
-Write-Host "=== 5) إعادة OCR انتقائية عبر Azure (استبدال الأفضل فقط، حفظ القديم) ==="
-# يمكنك ضبط العتبة وحدّ عدد الوثائق لكل جولة (مفيد لباقة F0):
-#   $env:REOCR_QUALITY_THRESHOLD = "60"
-#   $env:REOCR_MAX_DOCS = "5"
+# الحدّ الافتراضي للجولة: 5 وثائق (تجربة). غيّره بـ: $env:REOCR_MAX_DOCS = "0" لكل الضعيفة.
+if (-not $env:REOCR_MAX_DOCS) { $env:REOCR_MAX_DOCS = "5" }
+$thr = $env:REOCR_QUALITY_THRESHOLD; if (-not $thr) { $thr = "60" }
+Write-Host ("حدّ الجولة (REOCR_MAX_DOCS) = " + $env:REOCR_MAX_DOCS + " | عتبة الجودة = " + $thr)
+
+Write-Host "=== 5) تنزيل الوثائق الضعيفة من Google Drive ==="
+& $PY zaini_case_audit_output/scripts/fetch_weak_docs.py
+if ($LASTEXITCODE -ne 0) { Write-Host "X فشل التنزيل"; exit 1 }
+
+Write-Host "=== 6) إعادة OCR انتقائية عبر Azure (استبدال الأفضل فقط، حفظ القديم) ==="
 & $PY zaini_case_audit_output/scripts/reocr_generalize.py
 if ($LASTEXITCODE -ne 0) { Write-Host "X فشلت إعادة OCR"; exit 1 }
 
-Write-Host "=== 6) إعادة توليد الحزمة الوثائقية ==="
+Write-Host "=== 7) إعادة توليد الحزمة الوثائقية ==="
 & $PY zaini_case_audit_output/scripts/legal_package.py
 
 Write-Host ""

@@ -15,8 +15,9 @@ elif command -v python >/dev/null 2>&1; then PY=python
 else echo "✗ Python غير مثبّت."; exit 1; fi
 echo "✓ $($PY --version 2>&1)"
 
-echo "=== 2) تثبيت المتطلبات ==="
+echo "=== 2) تثبيت المتطلبات (+ gdown للتنزيل من Drive) ==="
 $PY -m pip install -r service/requirements.txt || { echo "✗ فشل تثبيت المتطلبات"; exit 1; }
+$PY -m pip install gdown >/dev/null 2>&1 || true
 
 echo "=== 3) التحقق من .env (Azure) ==="
 if [ ! -f .env ]; then
@@ -42,19 +43,18 @@ if [ ! -f "$JSONL" ]; then
   exit 1
 fi
 echo "✓ full_documents.jsonl موجود"
-if [ ! -d "$BATCH" ]; then
-  echo "‼ تنبيه: مجلد ملفات المصدر غير موجود: $BATCH"
-  echo "   ضع ملفات PDF/صور الوثائق الضعيفة هناك باسم <fileId>.pdf؛"
-  echo "   الوثائق بلا مصدر ستُبقى كما هي (لن تُعاد OCR)."
-fi
 
-echo "=== 5) إعادة OCR انتقائية عبر Azure (استبدال الأفضل فقط، حفظ القديم) ==="
-# لضبط العتبة وحدّ عدد الوثائق لكل جولة (مفيد لباقة F0):
-#   export REOCR_QUALITY_THRESHOLD=60
-#   export REOCR_MAX_DOCS=5
+# الحدّ الافتراضي للجولة: 5 وثائق (تجربة). للكل: export REOCR_MAX_DOCS=0
+: "${REOCR_MAX_DOCS:=5}"; export REOCR_MAX_DOCS
+echo "حدّ الجولة (REOCR_MAX_DOCS) = $REOCR_MAX_DOCS | عتبة الجودة = ${REOCR_QUALITY_THRESHOLD:-60}"
+
+echo "=== 5) تنزيل الوثائق الضعيفة من Google Drive ==="
+$PY zaini_case_audit_output/scripts/fetch_weak_docs.py || { echo "✗ فشل التنزيل"; exit 1; }
+
+echo "=== 6) إعادة OCR انتقائية عبر Azure (استبدال الأفضل فقط، حفظ القديم) ==="
 $PY zaini_case_audit_output/scripts/reocr_generalize.py || { echo "✗ فشلت إعادة OCR"; exit 1; }
 
-echo "=== 6) إعادة توليد الحزمة الوثائقية ==="
+echo "=== 7) إعادة توليد الحزمة الوثائقية ==="
 $PY zaini_case_audit_output/scripts/legal_package.py
 
 echo
