@@ -196,7 +196,7 @@ APP_SHELL = r"""<!DOCTYPE html>
 <style>
   :root{--bg:#f6f7f9;--pane:#fff;--ink:#1f2937;--mut:#6b7280;--line:#e5e7eb;
         --accent:#2563eb;--accent2:#eff6ff;--warn:#fde68a;--chip:#f1f5f9;
-        --tsize:14.5px;--tlh:1.95;--tfam:"Traditional Arabic","Simplified Arabic","Arabic Typesetting","Amiri",Tahoma,serif;--talign:start;}
+        --tsize:18px;--tlh:1.9;--tfam:"Traditional Arabic","Simplified Arabic","Arabic Typesetting","Amiri",Tahoma,serif;--talign:start;}
   *{box-sizing:border-box}
   body{margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.7}
   body.reading .side{display:none}
@@ -671,7 +671,7 @@ window.startApp = function(){
   renderList();updSel();
 
   /* ===== الخط (محفوظ) ===== */
-  var FS=14.5,LH=1.85;
+  var FS=18,LH=1.9;
   function applyFont(){var r=document.documentElement.style;r.setProperty('--tsize',FS+'px');r.setProperty('--tlh',LH);
     r.setProperty('--tfam',document.getElementById('fFam').value);
     r.setProperty('--talign',document.getElementById('fJustify').checked?'justify':'start');
