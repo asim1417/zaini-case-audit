@@ -30,6 +30,21 @@ BACKUP = OUTDIR / "_backup"
 FONT = "Traditional Arabic"
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
+# تنظيف النص العربي: إزالة علامات الاتجاه الخفية + توحيد الحروف/الأرقام الفارسية للعربية (بلا حذف محتوى).
+_STRIP = dict.fromkeys([0x200b, 0x200c, 0x200d, 0x200e, 0x200f, 0x202a, 0x202b,
+                        0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069, 0xfeff], None)
+_LOOK = {"ھ": "ه", "ہ": "ه", "ۀ": "ه", "ۃ": "ة", "ی": "ي", "ۍ": "ي", "ک": "ك"}
+_PDIG = {0x06F0 + i: chr(0x0660 + i) for i in range(10)}
+
+
+def clean_text(t):
+    if not t:
+        return t
+    t = t.translate(_STRIP)
+    for a, b in _LOOK.items():
+        t = t.replace(a, b)
+    return t.translate(_PDIG)
+
 # وسوم المراجعة الموحّدة
 T_OCR = "[بحاجة مراجعة: OCR غير واضح]"
 T_HF = "[بحاجة مراجعة: احتمال ترويسة مختلطة]"
@@ -253,9 +268,10 @@ def process_doc(rec, qc, logs):
 
 # ---------- بناء DOCX ----------
 def set_section_rtl(section):
+    # A4 وهوامش وفق أمر التنسيق العربي: يمين 3.5 · يسار 2.5 · أعلى 3 · أسفل 2 سم
     section.page_width = Mm(210); section.page_height = Mm(297)
-    section.top_margin = Cm(2); section.bottom_margin = Cm(2)
-    section.right_margin = Cm(2.5); section.left_margin = Cm(2)
+    section.top_margin = Cm(3); section.bottom_margin = Cm(2)
+    section.right_margin = Cm(3.5); section.left_margin = Cm(2.5)
     sectPr = section._sectPr
     bidi = OxmlElement("w:bidi"); sectPr.append(bidi)
 
@@ -287,7 +303,8 @@ def style_doc(doc):
 
 def add_par(doc, text, size=18, bold=False, italic=False, color=None, highlight=False, align="right"):
     p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT if align == "right" else WD_ALIGN_PARAGRAPH.CENTER
+    p.alignment = {"right": WD_ALIGN_PARAGRAPH.RIGHT, "center": WD_ALIGN_PARAGRAPH.CENTER,
+                   "justify": WD_ALIGN_PARAGRAPH.JUSTIFY}.get(align, WD_ALIGN_PARAGRAPH.RIGHT)
     pPr = p._p.get_or_add_pPr(); pPr.append(OxmlElement("w:bidi"))
     pf = p.paragraph_format; pf.space_after = Pt(6); pf.line_spacing = 1.15
     run = p.add_run(xml_safe(text)); run.bold = bold; run.italic = italic

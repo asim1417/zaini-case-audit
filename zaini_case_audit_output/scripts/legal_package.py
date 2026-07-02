@@ -194,6 +194,11 @@ def main():
     UNCERTAIN.mkdir(parents=True, exist_ok=True)
     qc = LC.load_qc()
     recs = [json.loads(l) for l in open(IN, encoding="utf-8") if l.strip()]
+    # تنظيف النص قبل التنسيق (توحيد الحروف/الأرقام الفارسية + إزالة علامات الاتجاه) — بلا حذف محتوى
+    for _r in recs:
+        _r["full_text"] = LC.clean_text(_r.get("full_text", "") or "")
+        if _r.get("title"):
+            _r["title"] = LC.clean_text(_r["title"])
     if sample:
         recs = recs[:sample]
 
@@ -430,7 +435,9 @@ def _render_doc(doc, d, dup_titles, bid):
             if kind == "heading":
                 LC.add_par(doc, tx, size=20, bold=True, color=RGBColor(0x1F, 0x4E, 0x79))
             else:
-                LC.add_par(doc, tx + (("  " + " ".join(tags)) if tags else ""), size=18, highlight=bool(tags))
+                # متن الفقرات: ضبط كامل Justified مع بقاء الاتجاه عربياً (وفق أمر التنسيق)
+                LC.add_par(doc, tx + (("  " + " ".join(tags)) if tags else ""), size=18,
+                           highlight=bool(tags), align="justify")
     pb = doc.add_paragraph(); pb.alignment = WD_ALIGN_PARAGRAPH.CENTER
     pb._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
     add_anchor_link(pb, "↑ العودة إلى الفهرس", "INDEX", size=13)
