@@ -32,64 +32,65 @@ def clean_text(t):
 
 # كشف الترويسات/التذييلات بحسب حدود الصفحات (علامات [صفحة N]) — أدقّ من التكرار الحرفي.
 _PM = re.compile(r'^\s*\[\s*صفح[ةه]\s*\d+\s*\]')
-_HDR_PAT = re.compile(r'المملك|العربي[ةه]\s*السعودي|وزار[ةه]\s*العدل|صك\s*رقم|المحكم|'
-                      r'القضي[ةه]\s*رقم|رقم\s*القضي|الدائر[ةه]|هيئ[ةه]\s*النظر|تاريخ\s*الجلس|بريد\s*الكترون')
+# كلمات بنية الترويسة الرسمية (تُخفّت حتى لو كانت كلمات صحيحة: أسماء محاكم/دوائر/أرقام)
+_HDR_KW = re.compile(r'المملك|العربي[ةه]\s*السعودي|وزار[ةه]\s*العدل|ديوان\s*المظالم|المحكم|الدائر[ةه]|'
+                     r'كتاب[ةه]\s*العدل|النياب[ةه]\s*العام|مجلس\s*القضاء|صك\s*رقم|رقم\s*الصك|'
+                     r'رقم\s*القضي|رقم\s*المعامل|رقم\s*الصفح|صفح[ةه]\s*\d|هيئ[ةه]\s*النظر|'
+                     r'بريد\s*ال[كإ]لكترون|هاتف|فاكس|ص\.?\s*ب\b|www\.|https?:|المركز\s*الوطني')
+# بدايات المتن — نتوقّف عن اعتبار السطر ترويسة عندها (لكل عائلة)
+_BODY_START = re.compile(r'بسم\s*الله|الحمد\s*لل[ةه]|ان[ةه]\s*في\s*يوم|لد[يى]\s*ان[اى]|بناء\s*عل[يى]|'
+                         r'وبعد|الوقائع|اسباب\s*الحكم|منطوق|حيث\s*ان|نظرن?ا|القرار|تتلخص|'
+                         r'المدع[يى]|الطلب|قررت\s*المحكم|السلام\s*عليكم|صاحب\s*السمو|سعادة')
 
 
-# ترويسات/تذييلات قوية تُخفّت أينما وردت كسطر قصير (تعمل حتى بلا علامات صفحات — للمذكرات والشكاوى)
-_STRONG_HF = re.compile(r'المملك[ةه]\s*العربي[ةه]\s*السعودي|وزار[ةه]\s*العدل|رقم\s*الصفح|'
-                        r'صفح[ةه]\s*\d+\s*(?:من|/)|بريد\s*ال[كإ]لكترون|ص\.?\s*ب\b|هاتف|فاكس|'
-                        r'www\.|https?:|الشبك[ةه]\s*العنكبوتي|المركز\s*الوطني')
+def _garbled(s):
+    """سطر مشوّه/غير نصّي: أغلب رموزه قصيرة أو قليلة الحروف (فُتات OCR)."""
+    toks = re.findall(r'[ء-ي]+', s)
+    letters = len(re.sub(r'[^ء-ي]', '', s))
+    if not toks:
+        return True
+    short = sum(1 for w in toks if len(w) <= 2)
+    return letters <= 4 or short / len(toks) >= 0.6
 
 
 def header_footer_lines(text):
-    """أرقام أسطر الترويسة/التذييل. تعمل بطريقتين معاً:
-       (أ) واعية بالصفحات: حول كل علامة [صفحة N].
-       (ب) نمطية: أي سطر ترويسة/تذييل قصير أينما ورد + ترويسة صدر المستند (بلا علامات)."""
+    """كشف موحّد البنية: يخفّت صدر كل صفحة (ترويسة العائلة الرسمية) حتى بداية المتن،
+       ويخفّت التذييلات حول علامات الصفحات، ويلتقط سطور الترويسة القوية أينما وردت."""
     lines = text.split("\n"); n = len(lines); hf = set()
-    has_marker = any(_PM.match(l) for l in lines)
-    if has_marker:
-        for i, l in enumerate(lines):
-            if not _PM.match(l):
-                continue
-            j, k = i + 1, 0
-            while j < n and k < 8 and not _PM.match(lines[j]):
-                s = lines[j].strip()
-                if not s:
-                    j += 1; continue
-                letters = len(re.sub(r'[^ء-ي]', '', s))
-                if _HDR_PAT.search(s) or letters <= 4 or (len(s) <= 14 and letters < len(s) * 0.5):
-                    hf.add(j); k += 1; j += 1
-                else:
-                    break
-            j, k = i - 1, 0
-            while j >= 0 and k < 3:
-                s = lines[j].strip()
-                if not s:
-                    j -= 1; continue
-                letters = len(re.sub(r'[^ء-ي]', '', s))
-                if letters <= 4 or re.match(r'^[\d\s٠-٩.,\-/]+$', s):
-                    hf.add(j); k += 1; j -= 1
-                else:
-                    break
-    else:
-        # (ب1) ترويسة صدر المستند: أوائل الأسطر الترويسية/الفُتات حتى أول محتوى حقيقي
-        k = 0
-        for j in range(min(n, 10)):
+    starts = [0] + [i + 1 for i, l in enumerate(lines) if _PM.match(l)]
+    for st in starts:
+        j, k = st, 0
+        while j < n and k < 12 and not _PM.match(lines[j]):
             s = lines[j].strip()
             if not s:
-                continue
+                j += 1; continue
+            if _BODY_START.search(s):
+                break  # بدأ المتن — لا تخفّت بعده
             letters = len(re.sub(r'[^ء-ي]', '', s))
-            if _HDR_PAT.search(s) or letters <= 4:
-                hf.add(j); k += 1
-            elif k > 0 and letters < 12:
-                hf.add(j)
+            is_hdr = bool(_HDR_KW.search(s)) or _garbled(s) or bool(re.match(r'^[\d\s٠-٩.,\-/:]+$', s))
+            if is_hdr:
+                hf.add(j); k += 1; j += 1
+            elif letters >= 20:
+                break  # سطر محتوى حقيقي طويل
+            else:
+                hf.add(j); k += 1; j += 1  # سطر قصير غامض بين ترويسات
+    # تذييلات: أسطر قبل علامات الصفحات (أرقام/فُتات/كلمات ترويسة)
+    for i, l in enumerate(lines):
+        if not _PM.match(l):
+            continue
+        j, k = i - 1, 0
+        while j >= 0 and k < 3:
+            s = lines[j].strip()
+            if not s:
+                j -= 1; continue
+            if _garbled(s) or re.match(r'^[\d\s٠-٩.,\-/]+$', s) or _HDR_KW.search(s):
+                hf.add(j); k += 1; j -= 1
             else:
                 break
-    # (ب2) في كل الأحوال: سطور الترويسة/التذييل القوية القصيرة أينما وردت
+    # سطور ترويسة قوية قصيرة أينما وردت (تذييلات وسط المستند)
     for j, l in enumerate(lines):
         s = l.strip()
-        if s and len(s) <= 34 and _STRONG_HF.search(s):
+        if s and len(s) <= 34 and _HDR_KW.search(s):
             hf.add(j)
     return sorted(hf)
 
@@ -312,6 +313,8 @@ APP_SHELL = r"""<!DOCTYPE html>
   .wrap{display:flex;height:calc(100vh - 96px)}
   .side{width:380px;min-width:280px;background:var(--pane);border-inline-start:1px solid var(--line);display:flex;flex-direction:column}
   .controls{padding:9px;border-bottom:1px solid var(--line)}
+  .srchopts{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;margin-bottom:5px}
+  .srchopts label{white-space:nowrap;display:flex;align-items:center;gap:3px;cursor:pointer}
   .controls input[type=text],.controls select{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:14px;margin-bottom:5px;font-family:inherit}
   .row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;font-size:12.5px;margin-bottom:4px}
   .row button{padding:4px 8px;border:1px solid var(--line);background:var(--pane);border-radius:7px;cursor:pointer;font-size:12.5px}
@@ -394,10 +397,6 @@ APP_SHELL = r"""<!DOCTYPE html>
       <option value="'Courier New',monospace">ثابت</option></select></span>
     <span class="grp"><label><input type="checkbox" id="fJustify" checked> ضبط</label></span>
     <span class="grp"><label><input type="checkbox" id="fReading"> قراءة</label></span>
-    <span class="grp"><label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label></span>
-    <span class="grp"><label title="إخفاء الترويسات/التذييلات المتكرّرة عبر الوثائق"><input type="checkbox" id="fHideHdr"> إخفاء الترويسات</label></span>
-    <span class="grp"><label title="تلوين المبالغ/التواريخ/الأطراف/الأرقام"><input type="checkbox" id="fColor" checked> تلوين</label></span>
-    <span class="grp"><label title="تحديد الكلمات غير الواضحة (تحتاج مراجعة بشرية)"><input type="checkbox" id="fSusp" checked> غير الواضح</label></span>
     <span class="grp">سمة<select id="fTheme"><option value="">فاتح</option><option value="dark">ليلي</option><option value="paper">ورقي</option></select></span>
     <span class="grp"><button id="lockBtn" title="حفظ نسخة مقفلة بكلمة مرور">🔒 قفل</button></span>
     <span class="grp"><button id="loadBtn" title="فتح بيانات قضية أخرى">📂 قضية</button>
@@ -422,6 +421,12 @@ APP_SHELL = r"""<!DOCTYPE html>
   <aside class="side">
     <div class="controls">
       <input type="text" id="q" placeholder='بحث… (عبارة دقيقة بين "" ، وليس قبل كلمة للاستبعاد)'>
+      <div class="row srchopts">
+        <label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label>
+        <label title="تلوين المبالغ/التواريخ/الأطراف/الأرقام"><input type="checkbox" id="fColor" checked> تلوين</label>
+        <label title="تحديد الكلمات غير الواضحة (تحتاج مراجعة بشرية)"><input type="checkbox" id="fSusp" checked> غير الواضح</label>
+        <label title="إخفاء الترويسات/التذييلات"><input type="checkbox" id="fHideHdr"> إخفاء الترويسات</label>
+      </div>
       <div class="row">
         <select id="type" style="flex:1"><option value="">كل الأنواع</option></select>
         <select id="sort" style="flex:1">
