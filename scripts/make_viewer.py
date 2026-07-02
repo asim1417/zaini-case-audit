@@ -383,6 +383,7 @@ APP_SHELL = r"""<!DOCTYPE html>
   .txt{white-space:pre-wrap;word-break:break-word;padding:12px 15px;font-size:var(--tsize);line-height:var(--tlh);font-family:var(--tfam);text-align:var(--talign);direction:rtl;unicode-bidi:plaintext}
   .distb{display:inline-block;margin-inline-start:6px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;padding:0 6px;font-size:11px;font-weight:600}
   .num{display:inline-block;min-width:26px;text-align:center;background:var(--chip);color:var(--mut);border-radius:6px;padding:0 5px;font-size:12px;font-weight:700}
+  .qb{display:inline-block;border-radius:6px;padding:0 5px;font-size:11px;font-weight:700}
   .txt .ln{display:flex;gap:10px}
   .txt .lno{flex:none;width:38px;color:#9ca3af;text-align:end;user-select:none;display:none}
   body.lines .txt .lno{display:inline-block}
@@ -637,7 +638,8 @@ window.startApp = function(){
       cb.onclick=function(ev){ev.stopPropagation();selected[d.id]=cb.checked;updSel();};
       var body=document.createElement('div');body.style.flex='1';
       var fl=flags[d.id]?' <span class="flag">'+esc(flags[d.id])+'</span>':'';
-      body.innerHTML='<div class="t"><span class="num">'+(d.n||'')+'</span> '+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
+      var qb=(d.issues&&d.issues.q!=null)?' <span class="qb" style="background:'+(d.issues.q>=85?'#dcfce7;color:#166534':d.issues.q>=70?'#fef9c3;color:#854d0e':'#fee2e2;color:#b91c1c')+'">'+d.issues.q+'%</span>':'';
+      body.innerHTML='<div class="t"><span class="num">'+(d.n||'')+'</span> '+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+qb+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
         '<div class="s">'+esc(d.doc_type)+(d.card&&d.card['التاريخ']?' · '+esc(d.card['التاريخ']):'')+fl+'</div>';
       body.onclick=function(){openDoc(d);};
       div.appendChild(cb);div.appendChild(body);return div;
@@ -694,7 +696,7 @@ window.startApp = function(){
     detailEl.innerHTML=
       '<div class="card"><h2>'+esc(d.title)+'</h2><div class="kv">'+kv+'</div>'+
         (d.corr&&d.corr.length?'<div class="corrbanner">⚙ عُدِّل آلياً '+d.corr.length+' سطر (كان معكوس الاتجاه) بناءً على الملف المصدر — بمعالج آلي. الأسطر الخضراء في النص هي المُعدَّلة؛ مرّر الفأرة عليها لرؤية الأصل.</div>':'')+
-        (d.issues?'<div class="kv" style="margin-top:6px">🔎 كشّاف الأخطاء — عكس اتجاه: '+d.issues.rev+' · أسطر ترويسة: '+d.issues.hdr+' · كلمات غير واضحة: '+d.issues.unclear+(d.issues.badsym?' · رموز تالفة: '+d.issues.badsym:'')+' · نسبة عربية: '+d.issues.ar+'</div>':'')+
+        (d.issues?'<div class="kv" style="margin-top:6px">🔎 كشّاف الأخطاء — جودة القراءة: <b>'+(d.issues.q!=null?d.issues.q+'%':'-')+'</b> · عكس اتجاه: '+d.issues.rev+' · أسطر ترويسة: '+d.issues.hdr+' · كلمات غير واضحة: '+d.issues.unclear+(d.issues.badsym?' · رموز تالفة: '+d.issues.badsym:'')+(d.issues.q!=null&&d.issues.q<70?' · <b style="color:#b91c1c">يُنصح بإعادة OCR</b>':'')+'</div>':'')+
         (d.parent_path?'<div style="margin-top:8px;color:var(--mut);font-size:12px">المسار: '+esc(d.parent_path)+'</div>':'')+
         (d.viewUrl?'<div style="margin-top:6px"><a class="openlink" href="'+esc(d.viewUrl)+'" target="_blank">فتح الأصل في Drive ↗</a></div>':'')+
         ent+qcHtml+
