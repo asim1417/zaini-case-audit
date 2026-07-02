@@ -18,8 +18,9 @@ import reocr_pilot as RP
 JSONL = ROOT / "outputs" / "json" / "full_documents.jsonl"
 BATCH = ROOT / "staging" / "reocr_batch"
 CAND = ROOT / "outputs" / "reocr_pilot" / "_candidates.json"
+TARGETS = ROOT / "staging" / "_reocr_targets.json"   # قائمة أهداف صريحة (إن وُجدت تُستخدم مباشرة)
 Q_THRESH = float(os.environ.get("REOCR_QUALITY_THRESHOLD", "60"))
-MAX_DOCS = int(os.environ.get("REOCR_MAX_DOCS", "5") or "0")  # 0 = بلا حدّ
+MAX_DOCS = int(os.environ.get("REOCR_MAX_DOCS", "0") or "0")  # 0 = بلا حدّ
 
 FID_RE = re.compile(r"/d/([A-Za-z0-9_-]+)")
 
@@ -30,6 +31,14 @@ def fid_of(rec):
 
 
 def select(recs):
+    # (1) أهداف صريحة مضبوطة مسبقاً (الـ17/9 وثيقة المحدّدة) — الأولوية لها.
+    if TARGETS.exists():
+        tg = json.load(open(TARGETS, encoding="utf-8"))
+        out = [{"fid": t["fid"], "title": t.get("title", ""),
+                "old_q": t.get("q", 0), "viewUrl": t.get("viewUrl", "")} for t in tg if t.get("fid")]
+        print("استُخدمت قائمة الأهداف الصريحة: %d وثيقة (%s)" % (len(out), TARGETS.name))
+        return out[:MAX_DOCS] if MAX_DOCS > 0 else out
+    # (2) وإلا: اختيار تلقائي حسب عتبة الجودة.
     out = []
     for r in recs:
         fid = fid_of(r)

@@ -45,8 +45,12 @@ fi
 echo "✓ full_documents.jsonl موجود"
 
 # الحدّ الافتراضي للجولة: 5 وثائق (تجربة). للكل: export REOCR_MAX_DOCS=0
-: "${REOCR_MAX_DOCS:=5}"; export REOCR_MAX_DOCS
-echo "حدّ الجولة (REOCR_MAX_DOCS) = $REOCR_MAX_DOCS | عتبة الجودة = ${REOCR_QUALITY_THRESHOLD:-60}"
+: "${REOCR_MAX_DOCS:=0}"; export REOCR_MAX_DOCS   # 0 = كل الأهداف المحدّدة
+if [ -f "$CASE/staging/_reocr_targets.json" ]; then
+  echo "الأهداف: قائمة محدّدة مسبقاً (_reocr_targets.json)"
+else
+  echo "الأهداف: اختيار تلقائي حسب عتبة الجودة (ضع _reocr_targets.json لتحديدها)"
+fi
 
 echo "=== 5) تنزيل الوثائق الضعيفة من Google Drive ==="
 $PY zaini_case_audit_output/scripts/fetch_weak_docs.py || { echo "✗ فشل التنزيل"; exit 1; }

@@ -48,9 +48,10 @@ if (-not (Test-Path $JSONL)) {
 Write-Host "OK full_documents.jsonl موجود"
 
 # الحدّ الافتراضي للجولة: 5 وثائق (تجربة). غيّره بـ: $env:REOCR_MAX_DOCS = "0" لكل الضعيفة.
-if (-not $env:REOCR_MAX_DOCS) { $env:REOCR_MAX_DOCS = "5" }
-$thr = $env:REOCR_QUALITY_THRESHOLD; if (-not $thr) { $thr = "60" }
-Write-Host ("حدّ الجولة (REOCR_MAX_DOCS) = " + $env:REOCR_MAX_DOCS + " | عتبة الجودة = " + $thr)
+if (-not $env:REOCR_MAX_DOCS) { $env:REOCR_MAX_DOCS = "0" }   # 0 = كل الأهداف المحدّدة
+$tg = Join-Path $CASE "staging\_reocr_targets.json"
+if (Test-Path $tg) { Write-Host "الأهداف: قائمة محدّدة مسبقاً (_reocr_targets.json)" }
+else { Write-Host "الأهداف: اختيار تلقائي حسب عتبة الجودة (ضع _reocr_targets.json لتحديدها)" }
 
 Write-Host "=== 5) تنزيل الوثائق الضعيفة من Google Drive ==="
 & $PY zaini_case_audit_output/scripts/fetch_weak_docs.py
