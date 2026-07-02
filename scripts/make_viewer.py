@@ -14,6 +14,21 @@ make_viewer.py — توليد واجهة تصفّح أمامية (HTML) لمخر
 import os, re, json, csv, io, datetime
 from pathlib import Path
 
+# تنظيف النص: إزالة علامات الاتجاه الخفية + توحيد الحروف/الأرقام الفارسية إلى العربية (بلا حذف محتوى).
+_STRIP = dict.fromkeys([0x200b, 0x200c, 0x200d, 0x200e, 0x200f, 0x202a, 0x202b,
+                        0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069, 0xfeff], None)
+_LOOK = {"ھ": "ه", "ہ": "ه", "ۀ": "ه", "ۃ": "ة", "ی": "ي", "ۍ": "ي", "ک": "ك"}
+_PDIG = {0x06F0 + i: chr(0x0660 + i) for i in range(10)}
+
+
+def clean_text(t):
+    if not t:
+        return t
+    t = t.translate(_STRIP)
+    for a, b in _LOOK.items():
+        t = t.replace(a, b)
+    return t.translate(_PDIG)
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_ROOT = Path(os.environ.get("CASE_ROOT") or SCRIPT_DIR.parent)
 OUT = OUTPUT_ROOT / "outputs"
@@ -61,14 +76,15 @@ def load_docs(qc):
             r = json.loads(line)
         except Exception:
             continue
-        title = r.get("title", "")
-        dist = _detect_distortion(r.get("full_text", "") or "")
+        title = clean_text(r.get("title", ""))
+        ft = clean_text(r.get("full_text", "") or "")
+        dist = _detect_distortion(ft)
         docs.append({
             "id": r.get("id", ""), "title": title,
             "doc_type": r.get("doc_type", "غير مصنف"),
             "parent_path": r.get("parent_path", ""), "viewUrl": r.get("viewUrl", ""),
             "card": r.get("card", {}) or {}, "entities": r.get("entities", {}) or {},
-            "full_text": r.get("full_text", "") or "",
+            "full_text": ft,
             "qc": qc.get(title) or qc.get(title.rsplit(".", 1)[0]) or {},
             "distorted": bool(dist["issues"]), "distReason": "، ".join(dist["issues"]),
         })
@@ -178,7 +194,7 @@ def main():
 
     shell_js = json.dumps(APP_SHELL).replace("</", "<\\/")
     # لا نستدعي startApp هنا (قد يسبق تعريفه)؛ الاستدعاء في نهاية سكربت التطبيق
-    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>\n<script src="case_morph.js"></script>')
+    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>\n<script src="case_morph.js"></script>\n<script src="case_suspects.js"></script>')
     # نستبدل أول وسم فقط؛ الوسم الثاني داخل دالة القفل يبقى نصاً ليعمل وقت التشغيل
     index_html = APP_SHELL.replace("__BOOTSTRAP__", boot, 1)
     (VIEWER / "index.html").write_text(index_html, encoding="utf-8")
@@ -205,6 +221,7 @@ APP_SHELL = r"""<!DOCTYPE html>
   .e-date{color:#1d4ed8}
   .e-num{color:#7c3aed}
   .e-party{color:#c2410c;font-weight:600}
+  u.susp{text-decoration:underline wavy #dc2626;text-decoration-skip-ink:none;cursor:help}
   body.dark .e-amt{color:#4ade80}body.dark .e-date{color:#93c5fd}body.dark .e-num{color:#c4b5fd}body.dark .e-party{color:#fdba74}
   .statwrap{padding:6px 16px 30px}.statwrap h3{margin:14px 0 6px}
   .sbar{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13.5px}
@@ -312,6 +329,7 @@ APP_SHELL = r"""<!DOCTYPE html>
     <span class="grp"><label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label></span>
     <span class="grp"><label title="إخفاء الترويسات/التذييلات المتكرّرة عبر الوثائق"><input type="checkbox" id="fHideHdr"> إخفاء الترويسات</label></span>
     <span class="grp"><label title="تلوين المبالغ/التواريخ/الأطراف/الأرقام"><input type="checkbox" id="fColor" checked> تلوين</label></span>
+    <span class="grp"><label title="تحديد الكلمات غير الواضحة (تحتاج مراجعة بشرية)"><input type="checkbox" id="fSusp" checked> غير الواضح</label></span>
     <span class="grp">سمة<select id="fTheme"><option value="">فاتح</option><option value="dark">ليلي</option><option value="paper">ورقي</option></select></span>
     <span class="grp"><button id="lockBtn" title="حفظ نسخة مقفلة بكلمة مرور">🔒 قفل</button></span>
     <span class="grp"><button id="loadBtn" title="فتح بيانات قضية أخرى">📂 قضية</button>
@@ -588,16 +606,26 @@ window.startApp = function(){
 
   function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
   function makeColorizer(d){
-    var c=document.getElementById('fColor');if(c&&!c.checked)return function(s){return s;};
+    var col=document.getElementById('fColor'),colOn=!col||col.checked;
+    var sc=document.getElementById('fSusp'),suspOn=!sc||sc.checked;
+    var SS=(window.SUSPECT&&window.SUSPECT[d.id])?window.SUSPECT[d.id]:null;
+    var suspSet=null;if(SS&&suspOn){suspSet={};for(var z=0;z<SS.length;z++)suspSet[SS[z]]=1;}
+    if(!colOn&&!suspSet)return function(s){return s;};
     var e=d.entities||{};
-    var names=[].concat(e.parties||[],e.other_actors||[],e.company||[]).filter(Boolean)
-              .map(function(x){return reEsc(esc(x));}).sort(function(a,b){return b.length-a.length;});
+    var names=colOn?[].concat(e.parties||[],e.other_actors||[],e.company||[]).filter(Boolean)
+              .map(function(x){return reEsc(esc(x));}).sort(function(a,b){return b.length-a.length;}):[];
     var nameAlt=names.length?names.join('|'):'(?!)';
     var re=new RegExp('('+nameAlt+')'
       +'|((?:[٠-٩]|\\d)[٠-٩\\d.,٬]*\\s*(?:ريال|ر\\.?س|مليون|مليار|ألف|الف|﷼))'
       +'|(\\d{1,2}\\s*[\\/\\-]\\s*\\d{1,2}\\s*[\\/\\-]\\s*\\d{2,4}|\\d{3,4}\\s*هـ|\\d{4}\\s*م)'
-      +'|((?:[٠-٩]|\\d){6,})','g');
-    return function(s){return s.replace(re,function(m,a,b,c2,d2){
+      +'|((?:[٠-٩]|\\d){6,})'
+      +'|([ء-ي]{2,})','g');
+    return function(s){return s.replace(re,function(m,a,b,c2,d2,w){
+      if(w!==undefined&&w!==''){ // كلمة عربية: علّمها إن كانت مشتبهة
+        if(suspSet&&suspSet[normStr(w)])return '<u class="susp" title="كلمة غير واضحة — تحتاج مراجعة">'+m+'</u>';
+        return m;
+      }
+      if(!colOn)return m;
       return '<span class="e-'+(a?'party':b?'amt':c2?'date':'num')+'">'+m+'</span>';});};
   }
   function renderText(d,P){
@@ -701,6 +729,7 @@ window.startApp = function(){
   document.getElementById('fAllRes').onchange=renderList;
   var hh=document.getElementById('fHideHdr');if(hh)hh.onchange=function(){document.body.classList.toggle('hideHdr',this.checked);if(current)openDoc(current);};
   var fc=document.getElementById('fColor');if(fc)fc.onchange=function(){if(current)openDoc(current);};
+  var fsp=document.getElementById('fSusp');if(fsp)fsp.onchange=function(){if(current)openDoc(current);};
   var ft=document.getElementById('fTheme');
   function applyTheme(v){document.body.classList.remove('dark','paper');if(v)document.body.classList.add(v);}
   if(ft){var svt=LS.get('theme','');ft.value=svt;applyTheme(svt);ft.onchange=function(){applyTheme(ft.value);LS.set('theme',ft.value);};}

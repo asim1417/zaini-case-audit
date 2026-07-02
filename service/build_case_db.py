@@ -12,6 +12,21 @@ build_case_db.py — يبني قاعدة بيانات SQLite للقضية من f
 """
 import os, re, sys, json, sqlite3
 
+# تنظيف: إزالة علامات الاتجاه + توحيد الحروف/الأرقام الفارسية إلى العربية (بلا حذف محتوى).
+_STRIP = dict.fromkeys([0x200b, 0x200c, 0x200d, 0x200e, 0x200f, 0x202a, 0x202b,
+                        0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069, 0xfeff], None)
+_LOOK = {"ھ": "ه", "ہ": "ه", "ۀ": "ه", "ۃ": "ة", "ی": "ي", "ۍ": "ي", "ک": "ك"}
+_PDIG = {0x06F0 + i: chr(0x0660 + i) for i in range(10)}
+
+
+def clean_text(t):
+    if not t:
+        return t
+    t = t.translate(_STRIP)
+    for a, b in _LOOK.items():
+        t = t.replace(a, b)
+    return t.translate(_PDIG)
+
 
 def norm(s):
     out = []
@@ -67,17 +82,18 @@ def build(jsonl, db_path):
     n = 0
     for r in rows:
         n += 1
-        ft = r.get("full_text", "") or ""
+        ft = clean_text(r.get("full_text", "") or "")
+        title_c = clean_text(r.get("title", ""))
         qc = r.get("qc", {}) or {}
         con.execute("INSERT OR REPLACE INTO docs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (
-            r.get("id", "") or ("DOC%03d" % n), n, r.get("title", ""), r.get("doc_type", "غير مصنف"),
+            r.get("id", "") or ("DOC%03d" % n), n, title_c, r.get("doc_type", "غير مصنف"),
             (r.get("card", {}) or {}).get("التاريخ", ""), qc.get("status", ""),
             1 if distortion(ft) else 0, distortion(ft), r.get("viewUrl", ""),
             json.dumps(r.get("card", {}) or {}, ensure_ascii=False),
             json.dumps(r.get("entities", {}) or {}, ensure_ascii=False),
-            ft, norm(r.get("title", "") + "\n" + ft)))
+            ft, norm(title_c + "\n" + ft)))
         con.execute("INSERT INTO fts(id,title,body) VALUES (?,?,?)",
-                    (r.get("id", "") or ("DOC%03d" % n), norm(r.get("title", "")), norm(ft)))
+                    (r.get("id", "") or ("DOC%03d" % n), norm(title_c), norm(ft)))
     con.commit()
     cnt = con.execute("SELECT COUNT(*) FROM docs").fetchone()[0]
     con.close()
