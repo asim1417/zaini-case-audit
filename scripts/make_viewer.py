@@ -30,6 +30,40 @@ def clean_text(t):
     return t.translate(_PDIG)
 
 
+def _cnorm(s):
+    o = []
+    for c in s:
+        k = ord(c)
+        if 0x064B <= k <= 0x0652 or k in (0x0640, 0x0670):
+            continue
+        o.append({"أ": "ا", "إ": "ا", "آ": "ا", "ة": "ه", "ى": "ي", "ؤ": "و", "ئ": "ي"}.get(c, c))
+    return "".join(o)
+
+
+# كلمات عربية شائعة: تظهر في النص الصحيح لا المعكوس — للكشف عن الأسطر المقلوبة اتجاهياً (OCR).
+_COMMON = set(_cnorm(w) for w in (
+    "من في على الى عن ان انه اذا الذي التي هذا هذه ذلك ولا وقد قد كان بعد قبل حيث لدى "
+    "الله المدعي المدعى المحكمة الدعوى الحكم بيع حصص ريال العقد التاريخ رقم صك وزارة "
+    "العدل المملكة العربية السعودية الطرف الوكالة النظام المادة بموجب بتاريخ الموافق "
+    "هو هي نحن انا وعلى وفي كما ثم او اي بن بنت الشيخ عن نفسه اصالة").split())
+
+
+def fix_reversed_lines(text):
+    """يعيد الأسطر المقلوبة اتجاهياً (فارطلأا → الأطراف) إلى وضعها الصحيح، بلا حذف.
+       يقلب السطر فقط إذا احتوى معكوسه كلمات شائعة أكثر بوضوح (كشف نسبي محافظ)."""
+    out = []
+    for l in text.split("\n"):
+        toks = re.findall(r'[ء-ي]{2,}', l)
+        if len(toks) >= 5 and " " in l.strip():
+            oh = sum(1 for w in toks if _cnorm(w) in _COMMON)
+            rt = re.findall(r'[ء-ي]{2,}', l[::-1])
+            rh = sum(1 for w in rt if _cnorm(w) in _COMMON)
+            if rh >= 3 and rh >= oh + 3:
+                out.append(l[::-1]); continue
+        out.append(l)
+    return "\n".join(out)
+
+
 # كشف الترويسات/التذييلات بحسب حدود الصفحات (علامات [صفحة N]) — أدقّ من التكرار الحرفي.
 _PM = re.compile(r'^\s*\[\s*صفح[ةه]\s*\d+\s*\]')
 # كلمات بنية الترويسة الرسمية (تُخفّت حتى لو كانت كلمات صحيحة: أسماء محاكم/دوائر/أرقام)
@@ -142,7 +176,7 @@ def load_docs(qc):
         except Exception:
             continue
         title = clean_text(r.get("title", ""))
-        ft = clean_text(r.get("full_text", "") or "")
+        ft = fix_reversed_lines(clean_text(r.get("full_text", "") or ""))
         dist = _detect_distortion(ft)
         docs.append({
             "id": r.get("id", ""), "title": title,
