@@ -36,34 +36,61 @@ _HDR_PAT = re.compile(r'المملك|العربي[ةه]\s*السعودي|وزا�
                       r'القضي[ةه]\s*رقم|رقم\s*القضي|الدائر[ةه]|هيئ[ةه]\s*النظر|تاريخ\s*الجلس|بريد\s*الكترون')
 
 
+# ترويسات/تذييلات قوية تُخفّت أينما وردت كسطر قصير (تعمل حتى بلا علامات صفحات — للمذكرات والشكاوى)
+_STRONG_HF = re.compile(r'المملك[ةه]\s*العربي[ةه]\s*السعودي|وزار[ةه]\s*العدل|رقم\s*الصفح|'
+                        r'صفح[ةه]\s*\d+\s*(?:من|/)|بريد\s*ال[كإ]لكترون|ص\.?\s*ب\b|هاتف|فاكس|'
+                        r'www\.|https?:|الشبك[ةه]\s*العنكبوتي|المركز\s*الوطني')
+
+
 def header_footer_lines(text):
-    """أرقام أسطر الترويسة/التذييل: بعد كل علامة صفحة (ترويسة) وقبلها (تذييل)."""
+    """أرقام أسطر الترويسة/التذييل. تعمل بطريقتين معاً:
+       (أ) واعية بالصفحات: حول كل علامة [صفحة N].
+       (ب) نمطية: أي سطر ترويسة/تذييل قصير أينما ورد + ترويسة صدر المستند (بلا علامات)."""
     lines = text.split("\n"); n = len(lines); hf = set()
-    for i, l in enumerate(lines):
-        if not _PM.match(l):
-            continue
-        # ترويسة: حتى 8 أسطر بعد العلامة (ترويسة رسمية أو فُتات قصيرة) حتى أول محتوى حقيقي
-        j, k = i + 1, 0
-        while j < n and k < 8 and not _PM.match(lines[j]):
+    has_marker = any(_PM.match(l) for l in lines)
+    if has_marker:
+        for i, l in enumerate(lines):
+            if not _PM.match(l):
+                continue
+            j, k = i + 1, 0
+            while j < n and k < 8 and not _PM.match(lines[j]):
+                s = lines[j].strip()
+                if not s:
+                    j += 1; continue
+                letters = len(re.sub(r'[^ء-ي]', '', s))
+                if _HDR_PAT.search(s) or letters <= 4 or (len(s) <= 14 and letters < len(s) * 0.5):
+                    hf.add(j); k += 1; j += 1
+                else:
+                    break
+            j, k = i - 1, 0
+            while j >= 0 and k < 3:
+                s = lines[j].strip()
+                if not s:
+                    j -= 1; continue
+                letters = len(re.sub(r'[^ء-ي]', '', s))
+                if letters <= 4 or re.match(r'^[\d\s٠-٩.,\-/]+$', s):
+                    hf.add(j); k += 1; j -= 1
+                else:
+                    break
+    else:
+        # (ب1) ترويسة صدر المستند: أوائل الأسطر الترويسية/الفُتات حتى أول محتوى حقيقي
+        k = 0
+        for j in range(min(n, 10)):
             s = lines[j].strip()
             if not s:
-                j += 1; continue
+                continue
             letters = len(re.sub(r'[^ء-ي]', '', s))
-            if _HDR_PAT.search(s) or letters <= 4 or (len(s) <= 14 and letters < len(s) * 0.5):
-                hf.add(j); k += 1; j += 1
+            if _HDR_PAT.search(s) or letters <= 4:
+                hf.add(j); k += 1
+            elif k > 0 and letters < 12:
+                hf.add(j)
             else:
                 break
-        # تذييل: حتى 3 أسطر قبل العلامة (أرقام صفحات/فُتات)
-        j, k = i - 1, 0
-        while j >= 0 and k < 3:
-            s = lines[j].strip()
-            if not s:
-                j -= 1; continue
-            letters = len(re.sub(r'[^ء-ي]', '', s))
-            if letters <= 4 or re.match(r'^[\d\s٠-٩.,\-/]+$', s):
-                hf.add(j); k += 1; j -= 1
-            else:
-                break
+    # (ب2) في كل الأحوال: سطور الترويسة/التذييل القوية القصيرة أينما وردت
+    for j, l in enumerate(lines):
+        s = l.strip()
+        if s and len(s) <= 34 and _STRONG_HF.search(s):
+            hf.add(j)
     return sorted(hf)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
