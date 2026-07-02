@@ -390,6 +390,11 @@ APP_SHELL = r"""<!DOCTYPE html>
   .txt .ln.boiler .lc{opacity:.4;font-style:italic}
   body.hideHdr .txt .ln.boiler{display:none}
   .txt .pgdiv{text-align:center;color:var(--mut);font-size:12px;border-top:1px dashed var(--line);margin:12px 0 6px;padding-top:5px;font-family:Tahoma,Arial}
+  .txt .ln.corrected .lc{background:#dcfce7;border-inline-start:3px solid #16a34a;padding-inline-start:6px}
+  body.dark .txt .ln.corrected .lc{background:#14532d}
+  .corrbanner{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:8px;padding:7px 10px;font-size:12.5px;margin:8px 0}
+  body.dark .corrbanner{background:#064e3b;color:#d1fae5;border-color:#065f46}
+  .issbadge{display:inline-block;margin-inline-start:6px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:0 6px;font-size:11px}
   mark{background:#fde68a}
   mark.cur{background:#fb923c;color:#000}
   .empty{color:var(--mut);text-align:center;margin-top:60px}
@@ -688,6 +693,8 @@ window.startApp = function(){
     var fl=flags[d.id]||'';
     detailEl.innerHTML=
       '<div class="card"><h2>'+esc(d.title)+'</h2><div class="kv">'+kv+'</div>'+
+        (d.corr&&d.corr.length?'<div class="corrbanner">⚙ عُدِّل آلياً '+d.corr.length+' سطر (كان معكوس الاتجاه) بناءً على الملف المصدر — بمعالج آلي. الأسطر الخضراء في النص هي المُعدَّلة؛ مرّر الفأرة عليها لرؤية الأصل.</div>':'')+
+        (d.issues?'<div class="kv" style="margin-top:6px">🔎 كشّاف الأخطاء — عكس اتجاه: '+d.issues.rev+' · أسطر ترويسة: '+d.issues.hdr+' · كلمات غير واضحة: '+d.issues.unclear+(d.issues.badsym?' · رموز تالفة: '+d.issues.badsym:'')+' · نسبة عربية: '+d.issues.ar+'</div>':'')+
         (d.parent_path?'<div style="margin-top:8px;color:var(--mut);font-size:12px">المسار: '+esc(d.parent_path)+'</div>':'')+
         (d.viewUrl?'<div style="margin-top:6px"><a class="openlink" href="'+esc(d.viewUrl)+'" target="_blank">فتح الأصل في Drive ↗</a></div>':'')+
         ent+qcHtml+
@@ -757,11 +764,14 @@ window.startApp = function(){
     // ترقيم أسطر
     var lines=out.split('\n');var rawLines=text.split('\n');
     var hdrSet={};(d.hdr||[]).forEach(function(x){hdrSet[x]=1;});
+    var corrMap={};(d.corr||[]).forEach(function(c){corrMap[c.i]=c.o;});
     box.innerHTML=lines.map(function(l,i){
       var raw=(rawLines[i]||'').trim();
       if(/^\[\s*صفح[ةه]\s*\d+\s*\]/.test(raw))return '<div class="pgdiv">'+esc(raw.replace(/^\[\s*|\s*\]$/g,''))+'</div>';
       var bl=(BOILER[normStr(raw)]||hdrSet[i])?' boiler':'';
-      return '<div class="ln'+bl+'"><span class="lno">'+(i+1)+'</span><span class="lc">'+l+'</span></div>';}).join('');
+      var cc=corrMap.hasOwnProperty(i)?' corrected':'';
+      var ti=corrMap.hasOwnProperty(i)?' title="مُعدَّل آلياً (كان معكوس الاتجاه) بناءً على الملف المصدر — معالج آلي. الأصل: '+esc(String(corrMap[i]).slice(0,80)).replace(/"/g,"”")+'"':'';
+      return '<div class="ln'+bl+cc+'"'+ti+'><span class="lno">'+(i+1)+'</span><span class="lc">'+l+'</span></div>';}).join('');
     marks=Array.prototype.slice.call(box.querySelectorAll('mark'));markIdx=marks.length?0:-1;updMarkInfo();
     if(marks.length){var tgt=(_pendingMark!=null&&_pendingMark<marks.length)?_pendingMark:(_pendingPos==='last'?marks.length-1:0);gotoMark(tgt);}
     _pendingPos='first';_pendingMark=null;
