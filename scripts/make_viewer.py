@@ -212,7 +212,7 @@ APP_SHELL = r"""<!DOCTYPE html>
 <style>
   :root{--bg:#f6f7f9;--pane:#fff;--ink:#1f2937;--mut:#6b7280;--line:#e5e7eb;
         --accent:#2563eb;--accent2:#eff6ff;--warn:#fde68a;--chip:#f1f5f9;
-        --tsize:18px;--tlh:1.9;--tfam:"Traditional Arabic","Simplified Arabic","Arabic Typesetting","Amiri",Tahoma,serif;--talign:start;}
+        --tsize:18px;--tlh:1.9;--tfam:"Traditional Arabic","Simplified Arabic","Arabic Typesetting","Amiri",Tahoma,serif;--talign:justify;}
   body.dark{--bg:#0f172a;--pane:#1e293b;--ink:#e5e7eb;--mut:#94a3b8;--line:#334155;--accent:#3b82f6;--accent2:#1e3a5f;--chip:#243449}
   body.dark mark{background:#854d0e;color:#fff}
   body.paper{--bg:#efe6d2;--pane:#fbf5e6;--ink:#3a2f1d;--mut:#8a7a5c;--line:#e0d4ba;--accent2:#f3ead2}
@@ -324,7 +324,7 @@ APP_SHELL = r"""<!DOCTYPE html>
       <option value="inherit">افتراضي</option>
       <option value="'Tahoma',Arial,sans-serif">واضح</option>
       <option value="'Courier New',monospace">ثابت</option></select></span>
-    <span class="grp"><label><input type="checkbox" id="fJustify"> ضبط</label></span>
+    <span class="grp"><label><input type="checkbox" id="fJustify" checked> ضبط</label></span>
     <span class="grp"><label><input type="checkbox" id="fReading"> قراءة</label></span>
     <span class="grp"><label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label></span>
     <span class="grp"><label title="إخفاء الترويسات/التذييلات المتكرّرة عبر الوثائق"><input type="checkbox" id="fHideHdr"> إخفاء الترويسات</label></span>
