@@ -29,6 +29,43 @@ def clean_text(t):
         t = t.replace(a, b)
     return t.translate(_PDIG)
 
+
+# كشف الترويسات/التذييلات بحسب حدود الصفحات (علامات [صفحة N]) — أدقّ من التكرار الحرفي.
+_PM = re.compile(r'^\s*\[\s*صفح[ةه]\s*\d+\s*\]')
+_HDR_PAT = re.compile(r'المملك|العربي[ةه]\s*السعودي|وزار[ةه]\s*العدل|صك\s*رقم|المحكم|'
+                      r'القضي[ةه]\s*رقم|رقم\s*القضي|الدائر[ةه]|هيئ[ةه]\s*النظر|تاريخ\s*الجلس|بريد\s*الكترون')
+
+
+def header_footer_lines(text):
+    """أرقام أسطر الترويسة/التذييل: بعد كل علامة صفحة (ترويسة) وقبلها (تذييل)."""
+    lines = text.split("\n"); n = len(lines); hf = set()
+    for i, l in enumerate(lines):
+        if not _PM.match(l):
+            continue
+        # ترويسة: حتى 8 أسطر بعد العلامة (ترويسة رسمية أو فُتات قصيرة) حتى أول محتوى حقيقي
+        j, k = i + 1, 0
+        while j < n and k < 8 and not _PM.match(lines[j]):
+            s = lines[j].strip()
+            if not s:
+                j += 1; continue
+            letters = len(re.sub(r'[^ء-ي]', '', s))
+            if _HDR_PAT.search(s) or letters <= 4 or (len(s) <= 14 and letters < len(s) * 0.5):
+                hf.add(j); k += 1; j += 1
+            else:
+                break
+        # تذييل: حتى 3 أسطر قبل العلامة (أرقام صفحات/فُتات)
+        j, k = i - 1, 0
+        while j >= 0 and k < 3:
+            s = lines[j].strip()
+            if not s:
+                j -= 1; continue
+            letters = len(re.sub(r'[^ء-ي]', '', s))
+            if letters <= 4 or re.match(r'^[\d\s٠-٩.,\-/]+$', s):
+                hf.add(j); k += 1; j -= 1
+            else:
+                break
+    return sorted(hf)
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_ROOT = Path(os.environ.get("CASE_ROOT") or SCRIPT_DIR.parent)
 OUT = OUTPUT_ROOT / "outputs"
@@ -87,6 +124,7 @@ def load_docs(qc):
             "full_text": ft,
             "qc": qc.get(title) or qc.get(title.rsplit(".", 1)[0]) or {},
             "distorted": bool(dist["issues"]), "distReason": "، ".join(dist["issues"]),
+            "hdr": header_footer_lines(ft),
         })
     return docs
 
@@ -285,6 +323,7 @@ APP_SHELL = r"""<!DOCTYPE html>
   .txt .lc{flex:1}
   .txt .ln.boiler .lc{opacity:.4;font-style:italic}
   body.hideHdr .txt .ln.boiler{display:none}
+  .txt .pgdiv{text-align:center;color:var(--mut);font-size:12px;border-top:1px dashed var(--line);margin:12px 0 6px;padding-top:5px;font-family:Tahoma,Arial}
   mark{background:#fde68a}
   mark.cur{background:#fb923c;color:#000}
   .empty{color:var(--mut);text-align:center;margin-top:60px}
@@ -649,7 +688,11 @@ window.startApp = function(){
     }
     // ترقيم أسطر
     var lines=out.split('\n');var rawLines=text.split('\n');
-    box.innerHTML=lines.map(function(l,i){var bl=BOILER[normStr((rawLines[i]||'').trim())]?' boiler':'';
+    var hdrSet={};(d.hdr||[]).forEach(function(x){hdrSet[x]=1;});
+    box.innerHTML=lines.map(function(l,i){
+      var raw=(rawLines[i]||'').trim();
+      if(/^\[\s*صفح[ةه]\s*\d+\s*\]/.test(raw))return '<div class="pgdiv">'+esc(raw.replace(/^\[\s*|\s*\]$/g,''))+'</div>';
+      var bl=(BOILER[normStr(raw)]||hdrSet[i])?' boiler':'';
       return '<div class="ln'+bl+'"><span class="lno">'+(i+1)+'</span><span class="lc">'+l+'</span></div>';}).join('');
     marks=Array.prototype.slice.call(box.querySelectorAll('mark'));markIdx=marks.length?0:-1;updMarkInfo();
     if(marks.length){var tgt=(_pendingMark!=null&&_pendingMark<marks.length)?_pendingMark:(_pendingPos==='last'?marks.length-1:0);gotoMark(tgt);}
