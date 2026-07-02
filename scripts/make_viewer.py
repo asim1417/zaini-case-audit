@@ -152,6 +152,7 @@ def load_docs(qc):
             "qc": qc.get(title) or qc.get(title.rsplit(".", 1)[0]) or {},
             "distorted": bool(dist["issues"]), "distReason": "، ".join(dist["issues"]),
             "hdr": header_footer_lines(ft),
+            "n": len(docs) + 1,
         })
     return docs
 
@@ -344,6 +345,7 @@ APP_SHELL = r"""<!DOCTYPE html>
   .txthead button{padding:3px 8px;border:1px solid var(--line);background:var(--pane);border-radius:7px;cursor:pointer;font-size:12px}
   .txt{white-space:pre-wrap;word-break:break-word;padding:12px 15px;font-size:var(--tsize);line-height:var(--tlh);font-family:var(--tfam);text-align:var(--talign);direction:rtl;unicode-bidi:plaintext}
   .distb{display:inline-block;margin-inline-start:6px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;padding:0 6px;font-size:11px;font-weight:600}
+  .num{display:inline-block;min-width:26px;text-align:center;background:var(--chip);color:var(--mut);border-radius:6px;padding:0 5px;font-size:12px;font-weight:700}
   .txt .ln{display:flex;gap:10px}
   .txt .lno{flex:none;width:38px;color:#9ca3af;text-align:end;user-select:none;display:none}
   body.lines .txt .lno{display:inline-block}
@@ -579,7 +581,7 @@ window.startApp = function(){
     if(!total)listEl.innerHTML='<div class="empty" style="margin-top:30px">لا نتائج.</div>';
   }
   function renderList(){
-    var fs=filtered();countEl.textContent=fs.length+' مطابق';
+    var fs=filtered();countEl.textContent=(fs.length===docs.length?fs.length+' وثيقة':fs.length+' من '+docs.length+' وثيقة');
     document.getElementById('scMatch').textContent=fs.length;document.getElementById('scAll').textContent=docs.length;
     var _P=parseQuery(qEl.value.trim());var _ar=document.getElementById('fAllRes');
     if(_ar&&_ar.checked&&!_P.empty){renderAllResults(fs,_P);return;}
@@ -591,7 +593,7 @@ window.startApp = function(){
       cb.onclick=function(ev){ev.stopPropagation();selected[d.id]=cb.checked;updSel();};
       var body=document.createElement('div');body.style.flex='1';
       var fl=flags[d.id]?' <span class="flag">'+esc(flags[d.id])+'</span>':'';
-      body.innerHTML='<div class="t">'+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
+      body.innerHTML='<div class="t"><span class="num">'+(d.n||'')+'</span> '+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
         '<div class="s">'+esc(d.doc_type)+(d.card&&d.card['التاريخ']?' · '+esc(d.card['التاريخ']):'')+fl+'</div>';
       body.onclick=function(){openDoc(d);};
       div.appendChild(cb);div.appendChild(body);return div;
