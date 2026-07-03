@@ -295,7 +295,7 @@ def main():
 
     shell_js = json.dumps(APP_SHELL).replace("</", "<\\/")
     # لا نستدعي startApp هنا (قد يسبق تعريفه)؛ الاستدعاء في نهاية سكربت التطبيق
-    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>\n<script src="case_morph.js"></script>\n<script src="case_suspects.js"></script>')
+    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>\n<script src="case_morph.js"></script>\n<script src="case_suspects.js"></script>\n<script src="case_terms.js"></script>')
     # نستبدل أول وسم فقط؛ الوسم الثاني داخل دالة القفل يبقى نصاً ليعمل وقت التشغيل
     index_html = APP_SHELL.replace("__BOOTSTRAP__", boot, 1)
     (VIEWER / "index.html").write_text(index_html, encoding="utf-8")
@@ -323,6 +323,11 @@ APP_SHELL = r"""<!DOCTYPE html>
   .e-num{color:#7c3aed}
   .e-party{color:#c2410c;font-weight:600}
   u.susp{text-decoration:underline wavy #dc2626;text-decoration-skip-ink:none;cursor:help}
+  mark.term{background:#ede9fe;color:#5b21b6;border-bottom:2px solid #7c3aed;padding:0 1px;cursor:help}
+  body.dark mark.term{background:#4c1d95;color:#e9d5ff}
+  .tchip{display:inline-block;background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe;border-radius:14px;padding:1px 9px;margin:2px;font-size:12.5px;cursor:pointer}
+  .tchip b{color:#7c3aed}
+  body.dark .tchip{background:#3b1d6e;color:#e9d5ff;border-color:#5b21b6}
   body.dark .e-amt{color:#4ade80}body.dark .e-date{color:#93c5fd}body.dark .e-num{color:#c4b5fd}body.dark .e-party{color:#fdba74}
   .statwrap{padding:6px 16px 30px}.statwrap h3{margin:14px 0 6px}
   .sbar{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13.5px}
@@ -464,6 +469,7 @@ APP_SHELL = r"""<!DOCTYPE html>
   <div class="tab" data-view="laws">الأنظمة</div>
   <div class="tab" data-view="milestones">المحطات</div>
   <div class="tab" data-view="stats">إحصاءات</div>
+  <div class="tab" data-view="terms">المصطلحات</div>
 </div>
 
 <div id="docsView" class="wrap">
@@ -476,6 +482,7 @@ APP_SHELL = r"""<!DOCTYPE html>
         <label title="تلوين المبالغ/التواريخ/الأطراف/الأرقام"><input type="checkbox" id="fColor" checked> تلوين</label>
         <label title="تحديد الكلمات غير الواضحة (تحتاج مراجعة بشرية)"><input type="checkbox" id="fSusp" checked> غير الواضح</label>
         <label title="إخفاء الترويسات/التذييلات"><input type="checkbox" id="fHideHdr"> إخفاء الترويسات</label>
+        <label title="تظليل المصطلحات القانونية المفتاحية وكل اشتقاقاتها"><input type="checkbox" id="fTerms" checked> مصطلحات</label>
       </div>
       <div class="row">
         <select id="type" style="flex:1"><option value="">كل الأنواع</option></select>
@@ -760,6 +767,9 @@ window.startApp = function(){
       '<div class="card"><h2>'+esc(d.title)+'</h2><div class="kv">'+kv+'</div>'+
         (d.corr&&d.corr.length?'<div class="corrbanner">⚙ عُدِّل آلياً '+d.corr.length+' سطر (كان معكوس الاتجاه) بناءً على الملف المصدر — بمعالج آلي. الأسطر الخضراء في النص هي المُعدَّلة؛ مرّر الفأرة عليها لرؤية الأصل.</div>':'')+
         (d.issues?'<div class="kv" style="margin-top:6px">🔎 كشّاف الأخطاء — جودة القراءة: <b>'+(d.issues.q!=null?d.issues.q+'%':'-')+'</b> · عكس اتجاه: '+d.issues.rev+' · أسطر ترويسة: '+d.issues.hdr+' · كلمات غير واضحة: '+d.issues.unclear+(d.issues.badsym?' · رموز تالفة: '+d.issues.badsym:'')+(d.issues.q!=null&&d.issues.q<70?' · <b style="color:#b91c1c">يُنصح بإعادة OCR</b>':'')+'</div>':'')+
+        (function(){var bd=window.TERMS&&window.TERMS.byDoc&&window.TERMS.byDoc[d._i];if(!bd)return '';
+          var ks=Object.keys(bd).sort(function(a,b){return bd[b]-bd[a];});
+          return '<div class="kv" style="margin-top:6px">🏷️ مصطلحات بارزة: '+ks.map(function(k){return '<span class="tchip" data-t="'+esc(k)+'">'+esc(k)+' <b>('+bd[k]+')</b></span>';}).join(' ')+'</div>';})()+
         (d.parent_path?'<div style="margin-top:8px;color:var(--mut);font-size:12px">المسار: '+esc(d.parent_path)+'</div>':'')+
         (d.viewUrl?'<div style="margin-top:6px"><a class="openlink" href="'+esc(d.viewUrl)+'" target="_blank">فتح الأصل في Drive ↗</a></div>':'')+
         ent+qcHtml+
@@ -787,9 +797,10 @@ window.startApp = function(){
   function makeColorizer(d){
     var col=document.getElementById('fColor'),colOn=!col||col.checked;
     var sc=document.getElementById('fSusp'),suspOn=!sc||sc.checked;
+    var tc=document.getElementById('fTerms');var tOn=(window.TERMS&&(!tc||tc.checked))?window.TERMS.form2c:null;
     var SS=(window.SUSPECT&&window.SUSPECT[d.id])?window.SUSPECT[d.id]:null;
     var suspSet=null;if(SS&&suspOn){suspSet={};for(var z=0;z<SS.length;z++)suspSet[SS[z]]=1;}
-    if(!colOn&&!suspSet)return function(s){return s;};
+    if(!colOn&&!suspSet&&!tOn)return function(s){return s;};
     var e=d.entities||{};
     var names=colOn?[].concat(e.parties||[],e.other_actors||[],e.company||[]).filter(Boolean)
               .map(function(x){return reEsc(esc(x));}).sort(function(a,b){return b.length-a.length;}):[];
@@ -800,8 +811,10 @@ window.startApp = function(){
       +'|((?:[٠-٩]|\\d){6,})'
       +'|([ء-ي]{2,})','g');
     return function(s){return s.replace(re,function(m,a,b,c2,d2,w){
-      if(w!==undefined&&w!==''){ // كلمة عربية: علّمها إن كانت مشتبهة
-        if(suspSet&&suspSet[normStr(w)])return '<u class="susp" title="كلمة غير واضحة — تحتاج مراجعة">'+m+'</u>';
+      if(w!==undefined&&w!==''){ // كلمة عربية: مصطلح مفتاحي؟ ثم مشتبهة؟
+        var nw=normStr(w);
+        if(tOn&&tOn[nw])return '<mark class="term" title="مصطلح مفتاحي: '+esc(tOn[nw])+'">'+m+'</mark>';
+        if(suspSet&&suspSet[nw])return '<u class="susp" title="كلمة غير واضحة — تحتاج مراجعة">'+m+'</u>';
         return m;
       }
       if(!colOn)return m;
@@ -879,6 +892,7 @@ window.startApp = function(){
     if(p)p.onclick=function(){navPrev();};if(n)n.onclick=function(){navNext();};
     var lt=document.getElementById('lnToggle');if(lt)lt.onclick=function(){document.body.classList.toggle('lines');};
     detailEl.querySelectorAll('.chips span').forEach(function(s){s.onclick=function(){qEl.value='"'+s.getAttribute('data-q')+'"';renderList();openDoc(current);};});
+    detailEl.querySelectorAll('.tchip').forEach(function(s){s.onclick=function(){qEl.value=s.getAttribute('data-t');renderList();};});
     detailEl.querySelectorAll('.qbtn').forEach(function(b){b.onclick=function(){
       var a=b.getAttribute('data-a');
       if(a==='copy'){navigator.clipboard&&navigator.clipboard.writeText(d.full_text||'');b.textContent='✓ نُسخ';setTimeout(function(){b.textContent='📋 نسخ النص';},1200);}
@@ -914,6 +928,7 @@ window.startApp = function(){
   document.getElementById('grp').onchange=renderList;document.getElementById('onlyFlag').onchange=renderList;
   document.getElementById('fAllRes').onchange=renderList;
   var hh=document.getElementById('fHideHdr');if(hh)hh.onchange=function(){document.body.classList.toggle('hideHdr',this.checked);if(current)openDoc(current);};
+  var ft2=document.getElementById('fTerms');if(ft2)ft2.onchange=function(){if(current)openDoc(current);};
   var fc=document.getElementById('fColor');if(fc)fc.onchange=function(){if(current)openDoc(current);};
   var fsp=document.getElementById('fSusp');if(fsp)fsp.onchange=function(){if(current)openDoc(current);};
   var ft=document.getElementById('fTheme');
@@ -1045,7 +1060,25 @@ window.startApp = function(){
       document.querySelector('.tab[data-view="docs"]').classList.add('active');curView='docs';
       docsView.style.display='';tableView.style.display='none';quotesView.style.display='none';renderList();};});
   }
+  function renderTerms(){
+    var T=window.TERMS;
+    if(!T||!T.concepts){tableView.innerHTML='<div class="empty" style="margin-top:40px">لا مصطلحات.</div>';return;}
+    var h='<div class="statwrap"><h3>المصطلحات القانونية المفتاحية — اضغط للبحث عنها (بكل اشتقاقاتها)</h3>';
+    var mx=T.concepts[0]?T.concepts[0].n:1;
+    T.concepts.forEach(function(c){
+      h+='<div class="sbar"><span class="lbl" data-t="'+esc(c.k)+'" style="text-decoration:underline dotted;width:110px">'+esc(c.k)+'</span>'+
+        '<span class="bb" style="width:'+Math.max(4,260*c.n/mx)+'px;background:#7c3aed"></span>'+
+        '<span class="cnt">'+c.n+' مرة · '+c.d+' وثيقة</span></div>';});
+    h+='</div>';
+    tableView.innerHTML=h;
+    tableView.querySelectorAll('.sbar .lbl[data-t]').forEach(function(el){el.onclick=function(){
+      qEl.value=el.getAttribute('data-t');
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+      document.querySelector('.tab[data-view="docs"]').classList.add('active');curView='docs';
+      docsView.style.display='';tableView.style.display='none';quotesView.style.display='none';renderList();};});
+  }
   function showTable(key){
+    if(key==='terms'){renderTerms();return;}
     if(key==='stats'){renderStats();return;}
     var t=(C.tables||{})[key];
     if(!t){tableView.innerHTML='<div class="empty" style="margin-top:40px">لا جدول.</div>';return;}
