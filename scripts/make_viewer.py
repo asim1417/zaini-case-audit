@@ -349,6 +349,13 @@ APP_SHELL = r"""<!DOCTYPE html>
   .controls{padding:9px;border-bottom:1px solid var(--line)}
   .srchopts{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;margin-bottom:5px}
   .srchopts label{white-space:nowrap;display:flex;align-items:center;gap:3px;cursor:pointer}
+  /* الوصولية (WCAG) */
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .skip{position:absolute;right:10px;top:-48px;background:var(--accent);color:#fff;padding:9px 14px;border-radius:8px;z-index:30;transition:top .15s}
+  .skip:focus{top:10px}
+  :focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+  .item:focus-visible,.tab:focus-visible{outline:3px solid #2563eb;outline-offset:-2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
   .controls input[type=text],.controls select{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:14px;margin-bottom:5px;font-family:inherit}
   .row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;font-size:12.5px;margin-bottom:4px}
   .row button{padding:4px 8px;border:1px solid var(--line);background:var(--pane);border-radius:7px;cursor:pointer;font-size:12.5px}
@@ -424,10 +431,11 @@ APP_SHELL = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
-<header>
+<a class="skip" href="#detail">تخطّي إلى محتوى الوثيقة</a>
+<header role="banner">
   <h1>واجهة تصفّح القضية</h1>
   <span class="banner">مخرج آلي يحتاج مراجعة بشرية</span>
-  <div class="bar">
+  <div class="bar" role="toolbar" aria-label="أدوات العرض">
     <span class="grp">نص<button id="fMinus">A−</button><button id="fPlus">A+</button></span>
     <span class="grp">أسطر<button id="lMinus">−</button><button id="lPlus">+</button></span>
     <span class="grp">خط<select id="fFam">
@@ -458,9 +466,10 @@ APP_SHELL = r"""<!DOCTYPE html>
 </div>
 
 <div id="docsView" class="wrap">
-  <aside class="side">
+  <aside class="side" role="navigation" aria-label="قائمة الوثائق والبحث">
     <div class="controls">
-      <input type="text" id="q" placeholder='بحث… (عبارة دقيقة بين "" ، وليس قبل كلمة للاستبعاد)'>
+      <label for="q" class="sr-only">بحث في الوثائق</label>
+      <input type="text" id="q" aria-label="بحث في الوثائق" placeholder='بحث… (عبارة دقيقة بين "" ، وليس قبل كلمة للاستبعاد)'>
       <div class="row srchopts">
         <label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label>
         <label title="تلوين المبالغ/التواريخ/الأطراف/الأرقام"><input type="checkbox" id="fColor" checked> تلوين</label>
@@ -487,11 +496,11 @@ APP_SHELL = r"""<!DOCTYPE html>
         <button id="cmpBtn" title="قارن وثيقتين محدّدتين جنباً إلى جنب">⇄ قارن</button>
         <span class="selcount" id="selCount">المحدد: 0</span>
       </div>
-      <div class="count" id="count"></div>
+      <div class="count" id="count" role="status" aria-live="polite"></div>
     </div>
-    <div class="list" id="list"></div>
+    <div class="list" id="list" role="list" aria-label="نتائج الوثائق" tabindex="-1"></div>
   </aside>
-  <main id="detail"><div class="empty">اختر مستنداً لعرض بطاقته ونصّه الكامل.</div></main>
+  <main id="detail" role="main" tabindex="-1"><div class="empty">اختر مستنداً لعرض بطاقته ونصّه الكامل.</div></main>
 </div>
 
 <div id="tableView" style="display:none;padding:0 14px 30px"></div>
@@ -634,7 +643,13 @@ window.startApp = function(){
     var grouped=document.getElementById('grp').checked;
     function itemEl(d){
       var div=document.createElement('div');div.className='item'+(current&&current.id===d.id?' active':'');
-      var cb=document.createElement('input');cb.type='checkbox';cb.checked=!!selected[d.id];
+      div.tabIndex=0;div.setAttribute('role','listitem');div.setAttribute('aria-label',(d.n||'')+'. '+d.title+(d.issues?'، جودة '+d.issues.q+' بالمئة':''));
+      div.onkeydown=function(ev){
+        if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();openDoc(d);}
+        else if(ev.key==='ArrowDown'||ev.key==='ArrowUp'){ev.preventDefault();
+          var items=listEl.querySelectorAll('.item');var idx=Array.prototype.indexOf.call(items,div);
+          var nx=items[idx+(ev.key==='ArrowDown'?1:-1)];if(nx)nx.focus();}};
+      var cb=document.createElement('input');cb.type='checkbox';cb.checked=!!selected[d.id];cb.setAttribute('aria-label','تحديد الوثيقة');
       cb.onclick=function(ev){ev.stopPropagation();selected[d.id]=cb.checked;updSel();};
       var body=document.createElement('div');body.style.flex='1';
       var fl=flags[d.id]?' <span class="flag">'+esc(flags[d.id])+'</span>':'';
@@ -713,8 +728,8 @@ window.startApp = function(){
       '<div class="card" style="padding:0"><div class="txthead">النص الكامل'+
         (d._distorted?'<span class="distb" title="مخرج آلي قد يحتاج إعادة قراءة">⚠ مشوّه — '+esc(d._distReason||'')+'</span>':'')+
         '<span class="sp"></span>'+
-        '<button id="mPrev">▲</button><span id="mInfo" style="font-size:12px;color:var(--mut)">—</span><button id="mNext">▼</button>'+
-        '<button id="lnToggle">#أسطر</button></div>'+
+        '<button id="mPrev" aria-label="المطابقة السابقة">▲</button><span id="mInfo" role="status" aria-live="polite" style="font-size:12px;color:var(--mut)">—</span><button id="mNext" aria-label="المطابقة التالية">▼</button>'+
+        '<button id="lnToggle" aria-label="إظهار/إخفاء أرقام الأسطر">#أسطر</button></div>'+
         '<div class="txt" id="txtBox"></div></div>';
     renderText(d,curP);
     detailEl.scrollTop=0;highlightList();bindDetail(d);
@@ -990,7 +1005,10 @@ window.startApp = function(){
     var h=extra+'<table><thead><tr>'+t.header.map(function(x){return '<th>'+esc(x)+'</th>';}).join('')+'</tr></thead><tbody>';
     t.rows.forEach(function(r){h+='<tr>'+r.map(function(x){return '<td>'+esc(x)+'</td>';}).join('')+'</tr>';});
     tableView.innerHTML=h+'</tbody></table>';}
-  document.querySelectorAll('.tab').forEach(function(tab){tab.onclick=function(){
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.tabIndex=0;tab.setAttribute('role','tab');
+    tab.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tab.click();}};
+    tab.onclick=function(){
     document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});tab.classList.add('active');
     var v=tab.getAttribute('data-view');curView=v;
     docsView.style.display=v==='docs'?'':'none';
