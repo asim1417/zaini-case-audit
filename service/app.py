@@ -13,15 +13,19 @@ Google Drive أو OneDrive عبر رابط مشاركة/معرّف مجلد — 
 التشغيل المحلي:  uvicorn app:app --host 0.0.0.0 --port 8080
 التوثيق التفاعلي: GET /docs   (OpenAPI/Swagger يولّده FastAPI تلقائياً)
 """
-import os, uuid, shutil, threading, datetime
+import os, sys, io, csv, json, uuid, shutil, threading, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 import pipeline
 import cloud_drives
+
+# مولّد العارض (لتحويل نتائج مهمّة إلى صيغة واجهة التصفّح window.CASE)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 JOBS_ROOT = Path(os.environ.get("JOBS_ROOT", "/data/jobs"))
 JOBS_ROOT.mkdir(parents=True, exist_ok=True)
@@ -30,6 +34,12 @@ MAX_FILES = int(os.environ.get("MAX_FILES", "500"))
 
 app = FastAPI(title="خدمة الفحص القانوني الآلي", version="1.0",
               description="معالجة وثائق قانونية عربية (OCR + فهرسة + بطاقات + حزمة) — محلية بالكامل.")
+
+# CORS: يسمح لواجهة العارض (ملف ثابت / GitHub Pages) باستدعاء الخدمة من متصفّح المستخدم.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()],
+    allow_methods=["*"], allow_headers=["*"])
 
 JOBS = {}        # job_id -> {status, created, docs, error}
 _LOCK = threading.Lock()
@@ -59,9 +69,26 @@ def _process(job_id):
         logs.close()
 
 
+UI_FILE = Path(__file__).resolve().parent / "ui.html"
+
+
+@app.get("/", include_in_schema=False)
+@app.get("/ui", include_in_schema=False)
+def ui_page():
+    """واجهة الويب: جلب سحابي / رفع ملفات / متابعة المهام / تنزيل النتائج."""
+    return HTMLResponse(UI_FILE.read_text(encoding="utf-8"))
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "time": datetime.datetime.now().isoformat()}
+
+
+@app.get("/drive/status")
+def drive_status(x_api_key: str = ""):
+    """أي المزوّدين السحابيين مهيأ (Google / OneDrive) وبأي نمط مصادقة."""
+    _auth(x_api_key)
+    return cloud_drives.providers_status()
 
 
 @app.post("/jobs")
@@ -162,6 +189,60 @@ def job_result(job_id: str, x_api_key: str = ""):
     if not res.exists():
         raise HTTPException(status_code=404, detail="لا توجد نتيجة")
     return FileResponse(str(res), media_type="application/zip", filename="legal_package_%s.zip" % job_id)
+
+
+# خرائط جداول العارض — نفس أسماء ملفات CSV التي ينتجها المحرّك
+_VIEWER_TABLES = {"timeline": "08_timeline_gregorian.csv", "deeds": "12_deeds_register.csv",
+                  "amounts": "09_central_amounts.csv", "grounds": "10_objection_cassation_grounds.csv",
+                  "laws": "11_central_law_references.csv", "milestones": "13_key_milestones.csv"}
+
+
+@app.get("/jobs/{job_id}/case_data")
+def job_case_data(job_id: str, x_api_key: str = ""):
+    """نتائج المهمّة بصيغة window.CASE — تستهلكها واجهة تصفّح القضية (زر «☁ سحابة»)."""
+    _auth(x_api_key)
+    j = JOBS.get(job_id)
+    if not j:
+        raise HTTPException(status_code=404, detail="مهمّة غير موجودة")
+    if j["status"] != "done":
+        return JSONResponse(status_code=409, content={"detail": "غير جاهزة", "status": j["status"]})
+    src = JOBS_ROOT / job_id / "outputs" / "json" / "full_documents.jsonl"
+    if not src.exists():
+        raise HTTPException(status_code=404, detail="لا بيانات وثائق لهذه المهمّة")
+    try:
+        import make_viewer as mv
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="مولّد العارض غير متاح: %s" % e)
+    docs = []
+    for line in src.open(encoding="utf-8"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except Exception:
+            continue
+        title = mv.clean_text(r.get("title", ""))
+        ft = mv.fix_reversed_lines(mv.clean_text(r.get("full_text", "") or ""))
+        dist = mv._detect_distortion(ft)
+        docs.append({"id": r.get("id", ""), "title": title,
+                     "doc_type": r.get("doc_type", "غير مصنف"),
+                     "parent_path": r.get("parent_path", ""), "viewUrl": r.get("viewUrl", ""),
+                     "card": r.get("card", {}) or {}, "entities": r.get("entities", {}) or {},
+                     "full_text": ft, "qc": {},
+                     "distorted": bool(dist["issues"]), "distReason": "، ".join(dist["issues"]),
+                     "hdr": mv.header_footer_lines(ft), "n": len(docs) + 1})
+    tables = {}
+    csv_dir = JOBS_ROOT / job_id / "outputs" / "csv"
+    for key, fname in _VIEWER_TABLES.items():
+        p = csv_dir / fname
+        if p.exists():
+            rows = list(csv.reader(io.StringIO(p.read_text(encoding="utf-8-sig", errors="replace"))))
+            if rows:
+                tables[key] = {"header": rows[0], "rows": rows[1:]}
+    return {"generated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "case_number": "", "doc_count": len(docs), "docs": docs,
+            "tables": tables, "boiler": mv._boilerplate(docs)}
 
 
 @app.get("/jobs/{job_id}/log")

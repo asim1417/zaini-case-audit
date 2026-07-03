@@ -330,6 +330,26 @@ PROVIDERS = {"google": GoogleDrive, "gdrive": GoogleDrive, "google_drive": Googl
              "onedrive": OneDrive, "microsoft": OneDrive, "ms": OneDrive}
 
 
+def providers_status() -> dict:
+    """حالة تهيئة كل مزوّد (من متغيّرات البيئة) — تستهلكها الواجهة لعرض شارات التفعيل."""
+    g_mode = ""
+    if (os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+            or os.environ.get("GOOGLE_SERVICE_ACCOUNT_FILE", "").strip()):
+        g_mode = "service_account"
+    elif all(os.environ.get(k, "").strip() for k in
+             ("GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_OAUTH_REFRESH_TOKEN")):
+        g_mode = "oauth_refresh_token"
+    o_mode = ""
+    if os.environ.get("MS_CLIENT_ID", "").strip():
+        if (os.environ.get("MS_TENANT_ID", "").strip()
+                and os.environ.get("MS_CLIENT_SECRET", "").strip()):
+            o_mode = "client_credentials"
+        elif OneDrive._cache_path().exists():
+            o_mode = "device_code"
+    return {"google": {"configured": bool(g_mode), "mode": g_mode},
+            "onedrive": {"configured": bool(o_mode), "mode": o_mode}}
+
+
 def _client(provider: str):
     cls = PROVIDERS.get((provider or "").strip().lower())
     if not cls:

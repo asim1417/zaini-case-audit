@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>خدمة الفحص القانوني — جلب ومعالجة الوثائق</title>
+<style>
+  :root{--ink:#1f2937;--mut:#6b7280;--line:#e5e7eb;--bg:#f6f7f9;--card:#fff;
+        --brand:#0f5e59;--brand2:#0b4a46;--ok:#0a7d33;--bad:#b42318;--warn:#92400e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Segoe UI","Tahoma","Noto Naskh Arabic",system-ui,sans-serif;line-height:1.7}
+  .wrap{max-width:880px;margin:0 auto;padding:24px 16px 64px}
+  header h1{font-size:1.35rem;margin:0 0 4px}
+  header p{color:var(--mut);margin:0 0 20px;font-size:.95rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:18px 20px;margin-bottom:18px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card h2{font-size:1.05rem;margin:0 0 12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  label{font-size:.9rem;color:var(--mut)}
+  input[type=text],input[type=password],select{
+    padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;
+    background:#fff;min-width:0}
+  input.grow{flex:1 1 320px}
+  button{padding:9px 18px;border:0;border-radius:8px;font:inherit;cursor:pointer;
+         background:var(--brand);color:#fff}
+  button:hover{background:var(--brand2)}
+  button.ghost{background:#eef2f1;color:var(--brand)}
+  button:disabled{opacity:.5;cursor:default}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:999px;
+         font-size:.85rem;border:1px solid var(--line);background:#f3f4f6;color:var(--mut)}
+  .badge.on{background:#e7f6ec;color:var(--ok);border-color:#bfe5cc}
+  .badge.on::before{content:"●"}
+  .badge.off::before{content:"○"}
+  .hint{font-size:.85rem;color:var(--mut);margin-top:8px}
+  .msg{margin-top:10px;font-size:.92rem;white-space:pre-wrap}
+  .msg.err{color:var(--bad)} .msg.ok{color:var(--ok)}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.9rem}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+  th{color:var(--mut);font-weight:600}
+  .num{direction:ltr;text-align:left;color:var(--mut)}
+  .job{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
+  .job .st{font-weight:700}
+  .st-queued,.st-downloading{color:var(--warn)}
+  .st-running{color:#1d4ed8}.st-done{color:var(--ok)}.st-error{color:var(--bad)}
+  pre.log{background:#0f172a;color:#d1e7dd;padding:10px 12px;border-radius:8px;
+          font-size:.78rem;max-height:220px;overflow:auto;direction:ltr;text-align:left}
+  a.dl{display:inline-block;margin-top:6px;color:var(--brand);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>⚖️ خدمة الفحص القانوني الآلي</h1>
+  <p>جلب وثائق القضية من السحابة أو رفعها يدوياً → معالجة (OCR + فهرسة + بطاقات) → تنزيل الحزمة.</p>
+</header>
+
+<div class="card">
+  <h2>الإعداد</h2>
+  <div class="row">
+    <label for="apikey">مفتاح API (إن كان مفعّلاً على الخادم):</label>
+    <input type="password" id="apikey" class="grow" placeholder="X-API-Key">
+    <button class="ghost" onclick="refreshStatus()">تحديث حالة الربط</button>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <span>حالة الربط السحابي:</span>
+    <span id="st-google" class="badge off">Google Drive — غير مفعّل</span>
+    <span id="st-onedrive" class="badge off">OneDrive — غير مفعّل</span>
+  </div>
+  <p class="hint">التفعيل يتم مرة واحدة على الخادم عبر متغيّرات البيئة —
+     التفاصيل في <code>service/README_CLOUD_DRIVES.md</code>.</p>
+  <div id="msg-status" class="msg"></div>
+</div>
+
+<div class="card">
+  <h2>1) جلب من Google Drive / OneDrive</h2>
+  <div class="row">
+    <select id="provider">
+      <option value="google">Google Drive</option>
+      <option value="onedrive">OneDrive</option>
+    </select>
+    <input type="text" id="link" class="grow" dir="ltr"
+           placeholder="https://drive.google.com/drive/folders/…  أو  https://1drv.ms/f/s!…">
+    <label><input type="checkbox" id="recursive" checked> شمول المجلدات الفرعية</label>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button onclick="previewDrive()">معاينة الملفات</button>
+    <button onclick="startDriveJob()">بدء الجلب والمعالجة</button>
+  </div>
+  <div id="msg-drive" class="msg"></div>
+  <div id="preview"></div>
+</div>
+
+<div class="card">
+  <h2>2) أو رفع ملفات من الجهاز</h2>
+  <div class="row">
+    <input type="file" id="files" multiple accept=".pdf,.jpg,.jpeg,.png">
+    <button onclick="uploadFiles()">رفع وبدء المعالجة</button>
+  </div>
+  <div id="msg-upload" class="msg"></div>
+</div>
+
+<div class="card">
+  <h2>المهام</h2>
+  <div id="jobs"><p class="hint">لا مهام بعد في هذه الجلسة.</p></div>
+</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const key = () => $('apikey').value.trim();
+const qk  = () => key() ? '?x_api_key=' + encodeURIComponent(key()) : '';
+$('apikey').value = localStorage.getItem('apikey') || '';
+$('apikey').addEventListener('change', () => localStorage.setItem('apikey', key()));
+
+function say(id, text, cls){ const el=$(id); el.textContent=text; el.className='msg '+(cls||''); }
+function fmtKB(n){ return n ? (n/1024).toFixed(1)+' KB' : '—'; }
+
+async function api(path, opts){
+  const r = await fetch(path + qk(), opts);
+  let body = {};
+  try { body = await r.json(); } catch(e){}
+  if (!r.ok) throw new Error(body.detail || ('HTTP ' + r.status));
+  return body;
+}
+
+// ─── حالة الربط ───
+const MODES = {service_account:'حساب خدمة', oauth_refresh_token:'OAuth شخصي',
+               client_credentials:'تطبيق مؤسسي', device_code:'جلسة محفوظة'};
+async function refreshStatus(){
+  say('msg-status','');
+  try{
+    const s = await api('/drive/status');
+    for (const p of ['google','onedrive']){
+      const el = $('st-'+p), name = p==='google' ? 'Google Drive' : 'OneDrive';
+      if (s[p].configured){ el.className='badge on';
+        el.textContent = name + ' — مفعّل (' + (MODES[s[p].mode]||s[p].mode) + ')'; }
+      else { el.className='badge off'; el.textContent = name + ' — غير مفعّل'; }
+    }
+  }catch(e){ say('msg-status','تعذّر جلب الحالة: '+e.message,'err'); }
+}
+
+// ─── الجلب السحابي ───
+function driveBody(){
+  return JSON.stringify({provider:$('provider').value, link:$('link').value.trim(),
+                         recursive:$('recursive').checked});
+}
+async function previewDrive(){
+  if(!$('link').value.trim()) return say('msg-drive','ألصق الرابط أولاً.','err');
+  say('msg-drive','جارٍ الاستعلام…'); $('preview').innerHTML='';
+  try{
+    const r = await api('/drive/list',{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:driveBody()});
+    say('msg-drive','عدد الملفات القابلة للمعالجة: '+r.count,'ok');
+    if(r.count){
+      let h='<table><tr><th>#</th><th>الاسم</th><th>الحجم</th></tr>';
+      r.files.slice(0,100).forEach((f,i)=>{h+='<tr><td class="num">'+(i+1)+'</td><td>'+
+        f.name.replace(/</g,'&lt;')+'</td><td class="num">'+fmtKB(f.size)+'</td></tr>';});
+      h+='</table>'; if(r.count>100) h+='<p class="hint">عرضت أول 100 ملف فقط.</p>';
+      $('preview').innerHTML=h;
+    }
+  }catch(e){ say('msg-drive',e.message,'err'); }
+}
+async function startDriveJob(){
+  if(!$('link').value.trim()) return say('msg-drive','ألصق الرابط أولاً.','err');
+  say('msg-drive','جارٍ إنشاء المهمّة…');
+  try{
+    const r = await api('/jobs/from-drive',{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:driveBody()});
+    say('msg-drive','أُنشئت المهمّة: '+r.job_id,'ok');
+    addJob(r.job_id);
+  }catch(e){ say('msg-drive',e.message,'err'); }
+}
+
+// ─── الرفع اليدوي ───
+async function uploadFiles(){
+  const fs = $('files').files;
+  if(!fs.length) return say('msg-upload','اختر ملفات أولاً.','err');
+  const fd = new FormData();
+  for(const f of fs) fd.append('files', f);
+  say('msg-upload','جارٍ الرفع ('+fs.length+' ملف)…');
+  try{
+    const r = await api('/jobs',{method:'POST', body:fd});
+    say('msg-upload','أُنشئت المهمّة: '+r.job_id,'ok');
+    addJob(r.job_id);
+  }catch(e){ say('msg-upload',e.message,'err'); }
+}
+
+// ─── متابعة المهام ───
+const STATES = {queued:'في الانتظار', downloading:'جارٍ الجلب من السحابة',
+                running:'جارٍ المعالجة', done:'اكتملت ✓', error:'خطأ ✗'};
+const jobs = {};
+function addJob(id){
+  if($('jobs').querySelector('.hint')) $('jobs').innerHTML='';
+  const d = document.createElement('div'); d.className='job'; d.id='job-'+id;
+  d.innerHTML='<div>مهمّة <code dir="ltr">'+id+'</code> — <span class="st">…</span>'+
+    ' <button class="ghost" style="padding:3px 10px;font-size:.8rem" onclick="toggleLog(\''+id+'\')">السجل</button></div>'+
+    '<div class="extra"></div>';
+  $('jobs').prepend(d);
+  jobs[id] = setInterval(()=>poll(id), 3000); poll(id);
+}
+async function poll(id){
+  try{
+    const j = await api('/jobs/'+id);
+    const el = $('job-'+id), st = el.querySelector('.st');
+    st.textContent = STATES[j.status]||j.status;
+    st.className = 'st st-'+j.status;
+    if(j.status==='done'){
+      clearInterval(jobs[id]);
+      el.querySelector('.extra').innerHTML =
+        '<div>عدد الوثائق: '+j.docs+' — <a class="dl" href="/jobs/'+id+'/result'+qk()+
+        '">⬇ تنزيل حزمة النتائج (ZIP)</a></div>';
+    }
+    if(j.status==='error'){
+      clearInterval(jobs[id]);
+      el.querySelector('.extra').innerHTML =
+        '<div class="msg err">'+(j.error||'خطأ غير معروف').replace(/</g,'&lt;')+'</div>';
+    }
+  }catch(e){ /* يستمر بالمحاولة */ }
+}
+async function toggleLog(id){
+  const ex = $('job-'+id).querySelector('.extra');
+  const old = ex.querySelector('pre.log');
+  if(old){ old.remove(); return; }
+  try{
+    const r = await api('/jobs/'+id+'/log');
+    const pre = document.createElement('pre'); pre.className='log';
+    pre.textContent = r.log || '(سجل فارغ)';
+    ex.appendChild(pre);
+  }catch(e){}
+}
+
+refreshStatus();
+</script>
+</body>
+</html>

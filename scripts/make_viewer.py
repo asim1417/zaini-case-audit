@@ -449,6 +449,7 @@ APP_SHELL = r"""<!DOCTYPE html>
     <span class="grp"><button id="lockBtn" title="حفظ نسخة مقفلة بكلمة مرور">🔒 قفل</button></span>
     <span class="grp"><button id="loadBtn" title="فتح بيانات قضية أخرى">📂 قضية</button>
       <input type="file" id="loadFile" accept=".js,.json" style="display:none"></span>
+    <span class="grp"><button id="cloudBtn" title="جلب ملفات من Google Drive / OneDrive عبر خدمة المعالجة">☁ سحابة</button></span>
   </div>
   <span class="meta" id="meta"></span>
 </header>
@@ -520,6 +521,20 @@ APP_SHELL = r"""<!DOCTYPE html>
     <button id="doWord">Word</button><button id="doPrint">طباعة / PDF</button>
     <button id="doHtml" class="alt">HTML</button><button id="doCsv" class="alt">بطاقات CSV</button>
     <button id="doQuotes" class="alt">تصدير المقتطفات/الملاحظات</button></div>
+</div></div>
+
+<div class="modal" id="cloudModal"><div class="panel">
+  <button class="x" id="cloudClose">×</button><h3>☁ جلب من السحابة</h3>
+  <div class="opt"><b>خدمة المعالجة:</b><br>
+    <input type="text" id="cSrv" dir="ltr" style="width:100%;box-sizing:border-box" placeholder="https://عنوان-الخدمة:8080">
+    <input type="password" id="cKey" dir="ltr" style="width:100%;box-sizing:border-box;margin-top:6px" placeholder="مفتاح API (إن كان مفعّلاً)"></div>
+  <div class="opt"><b>المصدر:</b><br>
+    <select id="cProv"><option value="google">Google Drive</option><option value="onedrive">OneDrive</option></select>
+    <input type="text" id="cLink" dir="ltr" style="width:100%;box-sizing:border-box;margin-top:6px" placeholder="رابط المشاركة أو معرّف المجلد">
+    <label><input type="checkbox" id="cRec" checked> شمول المجلدات الفرعية</label></div>
+  <div class="opt"><label><input type="checkbox" id="cMerge" checked> دمج الوثائق الجديدة مع القضية الحالية (وإلا تُعرض كقضية جديدة)</label></div>
+  <div class="acts"><button id="cPrev" class="alt">معاينة الملفات</button><button id="cGo">جلب ومعالجة</button></div>
+  <div id="cMsg" style="margin-top:8px;font-size:13px;white-space:pre-wrap;max-height:180px;overflow:auto"></div>
 </div></div>
 
 __BOOTSTRAP__
@@ -1059,6 +1074,60 @@ window.startApp = function(){
     r.onload=function(){try{var txt=r.result,m=txt.indexOf('{');var obj=JSON.parse(txt.slice(m,txt.lastIndexOf('}')+1));
       if(!obj.docs)throw 0;window.CASE=obj;document.getElementById('tableView').innerHTML='';window.startApp();
     }catch(e){alert('ملف بيانات قضية غير صالح (يُتوقّع case_data.js).');}};r.readAsText(f);};
+
+  /* ===== جلب من السحابة (Google Drive / OneDrive) عبر خدمة المعالجة ===== */
+  var cmodal=document.getElementById('cloudModal'),cmsg=document.getElementById('cMsg'),cpoll=null;
+  var cSrv=document.getElementById('cSrv'),cKey=document.getElementById('cKey');
+  try{cSrv.value=localStorage.getItem('cloudSrv')||'';cKey.value=localStorage.getItem('cloudKey')||'';}catch(e){}
+  document.getElementById('cloudBtn').onclick=function(){cmodal.classList.add('open');};
+  document.getElementById('cloudClose').onclick=function(){cmodal.classList.remove('open');if(cpoll){clearInterval(cpoll);cpoll=null;}};
+  function csay(m,err){cmsg.textContent=m;cmsg.style.color=err?'#b91c1c':'#166534';}
+  function cbase(){var u=cSrv.value.trim().replace(/\/+$/,'');
+    try{localStorage.setItem('cloudSrv',u);localStorage.setItem('cloudKey',cKey.value.trim());}catch(e){}
+    return u;}
+  function cqk(){var k=cKey.value.trim();return k?'?x_api_key='+encodeURIComponent(k):'';}
+  function cbody(){return JSON.stringify({provider:document.getElementById('cProv').value,
+    link:document.getElementById('cLink').value.trim(),recursive:document.getElementById('cRec').checked});}
+  function capi(path,opts,cb){fetch(cbase()+path+cqk(),opts)
+    .then(function(r){return r.json().then(function(b){cb(r.ok?null:(b.detail||('HTTP '+r.status)),b);});})
+    .catch(function(e){cb('تعذّر الاتصال بالخدمة: '+e.message);});}
+  function cready(){
+    if(!cbase()){csay('أدخل عنوان خدمة المعالجة أولاً (مثال: https://server:8080).',1);return false;}
+    if(!document.getElementById('cLink').value.trim()){csay('ألصق رابط المشاركة أو معرّف المجلد.',1);return false;}
+    return true;}
+  document.getElementById('cPrev').onclick=function(){
+    if(!cready())return;csay('جارٍ الاستعلام…');
+    capi('/drive/list',{method:'POST',headers:{'Content-Type':'application/json'},body:cbody()},function(err,b){
+      if(err)return csay(err,1);
+      var names=(b.files||[]).slice(0,15).map(function(f){return '• '+f.name;}).join('\n');
+      csay('الملفات القابلة للمعالجة: '+b.count+(names?'\n'+names:'')+((b.count>15)?'\n…':''));});};
+  document.getElementById('cGo').onclick=function(){
+    if(!cready())return;csay('جارٍ إنشاء المهمّة…');
+    capi('/jobs/from-drive',{method:'POST',headers:{'Content-Type':'application/json'},body:cbody()},function(err,b){
+      if(err)return csay(err,1);
+      var id=b.job_id;csay('المهمّة '+id+' — جارٍ الجلب من السحابة…');
+      if(cpoll)clearInterval(cpoll);
+      cpoll=setInterval(function(){
+        capi('/jobs/'+id,{},function(e2,s){
+          if(e2)return;
+          if(s.status==='error'){clearInterval(cpoll);cpoll=null;return csay('خطأ المهمّة: '+(s.error||'غير معروف'),1);}
+          if(s.status!=='done'){
+            var M={queued:'في الانتظار',downloading:'جارٍ الجلب من السحابة…',running:'جارٍ المعالجة (OCR + فهرسة)… قد تستغرق دقائق'};
+            return csay('المهمّة '+id+' — '+(M[s.status]||s.status));}
+          clearInterval(cpoll);cpoll=null;csay('اكتملت المعالجة — جارٍ تحميل الوثائق للعارض…');
+          capi('/jobs/'+id+'/case_data',{},function(e3,data){
+            if(e3)return csay(e3,1);
+            if(document.getElementById('cMerge').checked&&window.CASE&&window.CASE.docs&&window.CASE.docs.length){
+              var seen={};window.CASE.docs.forEach(function(d){seen[d.id]=1;});
+              (data.docs||[]).forEach(function(d){if(!seen[d.id]){d.n=window.CASE.docs.length+1;window.CASE.docs.push(d);}});
+              window.CASE.doc_count=window.CASE.docs.length;
+            }else{window.CASE=data;}
+            cmodal.classList.remove('open');
+            document.getElementById('tableView').innerHTML='';
+            window.startApp();
+          });
+        });
+      },4000);});};
 
   /* ===== قفل بكلمة مرور (تشفير محلي AES-GCM) ===== */
   document.getElementById('lockBtn').onclick=async function(){

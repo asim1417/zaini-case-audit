@@ -15,8 +15,9 @@ WORKDIR /app
 COPY service/requirements.txt /app/service/requirements.txt
 RUN pip install --no-cache-dir -r /app/service/requirements.txt
 
-# المحرّك + الخدمة
+# المحرّك + الخدمة + مولّد العارض (لتحويل النتائج لصيغة واجهة التصفّح)
 COPY zaini_case_audit_output/scripts /app/zaini_case_audit_output/scripts
+COPY scripts /app/scripts
 COPY service /app/service
 
 ENV JOBS_ROOT=/data/jobs
