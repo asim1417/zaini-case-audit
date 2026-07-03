@@ -163,7 +163,7 @@ def main():
     zpath = out_root / (PKG_NAME + "_clean.zip")
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
         for p in sorted(pkg.rglob("*")):
-            if p.is_file():
+            if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc":
                 zi = zipfile.ZipInfo(str(Path(PKG_NAME) / p.relative_to(pkg)))
                 zi.flag_bits |= 0x800
                 z.writestr(zi, p.read_bytes())
