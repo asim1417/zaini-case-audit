@@ -295,7 +295,7 @@ def main():
 
     shell_js = json.dumps(APP_SHELL).replace("</", "<\\/")
     # لا نستدعي startApp هنا (قد يسبق تعريفه)؛ الاستدعاء في نهاية سكربت التطبيق
-    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>\n<script src="case_morph.js"></script>\n<script src="case_suspects.js"></script>\n<script src="case_terms.js"></script>')
+    boot = ('<script>window.APP_SHELL=' + shell_js + ';</script>\n<script src="case_data.js"></script>\n<script src="case_morph.js"></script>\n<script src="case_suspects.js"></script>\n<script src="case_terms.js"></script>\n<script src="case_freq.js"></script>')
     # نستبدل أول وسم فقط؛ الوسم الثاني داخل دالة القفل يبقى نصاً ليعمل وقت التشغيل
     index_html = APP_SHELL.replace("__BOOTSTRAP__", boot, 1)
     (VIEWER / "index.html").write_text(index_html, encoding="utf-8")
@@ -470,6 +470,7 @@ APP_SHELL = r"""<!DOCTYPE html>
   <div class="tab" data-view="milestones">المحطات</div>
   <div class="tab" data-view="stats">إحصاءات</div>
   <div class="tab" data-view="terms">المصطلحات</div>
+  <div class="tab" data-view="freq">الأكثر تكراراً</div>
 </div>
 
 <div id="docsView" class="wrap">
@@ -1080,7 +1081,24 @@ window.startApp = function(){
       document.querySelector('.tab[data-view="docs"]').classList.add('active');curView='docs';
       docsView.style.display='';tableView.style.display='none';quotesView.style.display='none';renderList();};});
   }
+  function renderFreq(){
+    var F=window.FREQ;
+    if(!F||!F.length){tableView.innerHTML='<div class="empty" style="margin-top:40px">لا بيانات.</div>';return;}
+    var mx=F[0].n||1;
+    var h='<div class="statwrap"><h3>الكلمات الأكثر تكراراً (مجمّعة بمختلف صيغها، بلا أسماء الأطراف) — اضغط أي كلمة للبحث عنها ('+F.length+' مجموعة)</h3>';
+    F.forEach(function(r){
+      h+='<div class="sbar"><span class="lbl" data-t="'+esc(r.w)+'" title="'+esc((r.f||[]).join("، "))+'" style="text-decoration:underline dotted;width:130px">'+esc(r.w)+'</span>'+
+        '<span class="bb" style="width:'+Math.max(4,260*r.n/mx)+'px"></span>'+
+        '<span class="cnt">'+r.n+' مرة · '+r.d+' وثيقة</span></div>';});
+    h+='</div>';tableView.innerHTML=h;
+    tableView.querySelectorAll('.sbar .lbl[data-t]').forEach(function(el){el.onclick=function(){
+      qEl.value=el.getAttribute('data-t');
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+      document.querySelector('.tab[data-view="docs"]').classList.add('active');curView='docs';
+      docsView.style.display='';tableView.style.display='none';quotesView.style.display='none';renderList();};});
+  }
   function showTable(key){
+    if(key==='freq'){renderFreq();return;}
     if(key==='terms'){renderTerms();return;}
     if(key==='stats'){renderStats();return;}
     var t=(C.tables||{})[key];
