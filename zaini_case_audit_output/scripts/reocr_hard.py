@@ -64,6 +64,7 @@ def variants(im):
 
 
 def ocr(im, psm):
+    OUT.mkdir(parents=True, exist_ok=True)   # قد يُستدعى قبل تهيئة مجلد المخرجات (خدمة/حاوية جديدة)
     p = OUT / "_t.png"; im.save(p)
     try:
         r = subprocess.run(["tesseract", str(p), "stdout", "-l", "ara", "--oem", "1", "--psm", str(psm)],
