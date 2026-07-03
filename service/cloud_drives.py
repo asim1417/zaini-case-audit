@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-cloud_drives.py — ربط محرّك زيني بـ Google Drive و OneDrive لجلب ملفات القضايا.
+cloud_drives.py — ربط محرّك الفحص القانوني بـ Google Drive و OneDrive لجلب ملفات القضايا.
 
 مزوّدان مدعومان:
   • Google Drive  (Drive API v3)      — مصادقة بحساب خدمة (موصى به) أو Refresh Token.
