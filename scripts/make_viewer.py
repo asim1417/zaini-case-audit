@@ -471,7 +471,7 @@ APP_SHELL = r"""<!DOCTYPE html>
       <label for="q" class="sr-only">بحث في الوثائق</label>
       <input type="text" id="q" aria-label="بحث في الوثائق" placeholder='بحث… (عبارة دقيقة بين "" ، وليس قبل كلمة للاستبعاد)'>
       <div class="row srchopts">
-        <label title="يبحث عن كل اشتقاقات الكلمة بنفس الجذر"><input type="checkbox" id="fRoot" checked> جذر</label>
+        <label title="يبحث عن اشتقاقات الكلمة الدقيقة (نفس الأصل الصرفي) — بلا كلمات بعيدة"><input type="checkbox" id="fRoot" checked> اشتقاق</label>
         <label title="تلوين المبالغ/التواريخ/الأطراف/الأرقام"><input type="checkbox" id="fColor" checked> تلوين</label>
         <label title="تحديد الكلمات غير الواضحة (تحتاج مراجعة بشرية)"><input type="checkbox" id="fSusp" checked> غير الواضح</label>
         <label title="إخفاء الترويسات/التذييلات"><input type="checkbox" id="fHideHdr"> إخفاء الترويسات</label>
