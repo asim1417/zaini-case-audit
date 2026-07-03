@@ -391,6 +391,7 @@ APP_SHELL = r"""<!DOCTYPE html>
   .distb{display:inline-block;margin-inline-start:6px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;padding:0 6px;font-size:11px;font-weight:600}
   .num{display:inline-block;min-width:26px;text-align:center;background:var(--chip);color:var(--mut);border-radius:6px;padding:0 5px;font-size:12px;font-weight:700}
   .qb{display:inline-block;border-radius:6px;padding:0 5px;font-size:11px;font-weight:700}
+  .hitb{display:inline-block;background:#fef08a;color:#713f12;border-radius:6px;padding:0 6px;font-size:11px;font-weight:700}
   .txt .ln{display:flex;gap:10px}
   .txt .lno{flex:none;width:38px;color:#9ca3af;text-align:end;user-select:none;display:none}
   body.lines .txt .lno{display:inline-block}
@@ -676,9 +677,12 @@ window.startApp = function(){
     document.getElementById('scMatch').textContent=fs.length;document.getElementById('scAll').textContent=docs.length;
     var _P=parseQuery(qEl.value.trim());var _ar=document.getElementById('fAllRes');
     if(_ar&&_ar.checked&&!_P.empty){renderAllResults(fs,_P);return;}
+    var _qs=_P.empty?null:queryStems(_P);
     listEl.innerHTML='';
     var grouped=document.getElementById('grp').checked;
     function itemEl(d){
+      var hb='';
+      if(_qs&&_qs.length){if(!_idx)buildIndex();var _tf=_idx.tf[d._i]||{};var _h=0;for(var _z=0;_z<_qs.length;_z++)_h+=_tf[_qs[_z]]||0;if(_h)hb=' <span class="hitb">'+_h+' مطابقة</span>';}
       var div=document.createElement('div');div.className='item'+(current&&current.id===d.id?' active':'');
       div.tabIndex=0;div.setAttribute('role','listitem');div.setAttribute('aria-label',(d.n||'')+'. '+d.title+(d.issues?'، جودة '+d.issues.q+' بالمئة':''));
       div.onkeydown=function(ev){
@@ -691,7 +695,7 @@ window.startApp = function(){
       var body=document.createElement('div');body.style.flex='1';
       var fl=flags[d.id]?' <span class="flag">'+esc(flags[d.id])+'</span>':'';
       var qb=(d.issues&&d.issues.q!=null)?' <span class="qb" style="background:'+(d.issues.q>=85?'#dcfce7;color:#166534':d.issues.q>=70?'#fef9c3;color:#854d0e':'#fee2e2;color:#b91c1c')+'">'+d.issues.q+'%</span>':'';
-      body.innerHTML='<div class="t"><span class="num">'+(d.n||'')+'</span> '+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+qb+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
+      body.innerHTML='<div class="t"><span class="num">'+(d.n||'')+'</span> '+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+qb+hb+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
         '<div class="s">'+esc(d.doc_type)+(d.card&&d.card['التاريخ']?' · '+esc(d.card['التاريخ']):'')+fl+'</div>';
       body.onclick=function(){openDoc(d);};
       div.appendChild(cb);div.appendChild(body);return div;
