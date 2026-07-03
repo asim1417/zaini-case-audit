@@ -479,7 +479,8 @@ APP_SHELL = r"""<!DOCTYPE html>
       <div class="row">
         <select id="type" style="flex:1"><option value="">كل الأنواع</option></select>
         <select id="sort" style="flex:1">
-          <option value="none">الترتيب: الأصل</option>
+          <option value="relevance" selected>الترتيب: الصلة (BM25)</option>
+          <option value="none">الأصل</option>
           <option value="date">التاريخ</option>
           <option value="title">الأبجدية</option>
           <option value="type">النوع</option></select>
@@ -565,6 +566,35 @@ window.startApp = function(){
   // توسعة الكلمة إلى عائلة جذرها (إن فُعّل «جذر» وتوفّر المعجم MORPH)
   var MORPH=window.MORPH||null;
   var BOILER={};(C.boiler||[]).forEach(function(t){BOILER[t]=1;});
+  /* ===== معيار Elasticsearch العربي: تجذيع خفيف (Lucene) + BM25 ===== */
+  var _PREF=['وال','بال','كال','فال','لل','ال','و'];
+  var _SUF=['ها','ات','ان','ون','ين','يه','ه','ي'];
+  function lightStem(w){ // مدخل مُطبَّع مسبقاً
+    if(!w)return w;
+    for(var i=0;i<_PREF.length;i++){var p=_PREF[i];if(w.length-p.length>=2&&w.indexOf(p)===0){w=w.slice(p.length);break;}}
+    for(var j=0;j<_SUF.length;j++){var s=_SUF[j];if(w.length-s.length>=2&&w.slice(-s.length)===s){w=w.slice(0,w.length-s.length);break;}}
+    return w;
+  }
+  var _idx=null;
+  function buildIndex(){
+    var df={},dl=[],tfa=[],total=0;
+    for(var i=0;i<docs.length;i++){
+      var toks=(docs[i]._h||'').match(/[ء-ي]{2,}/g)||[];var tf={};
+      for(var t=0;t<toks.length;t++){var s=lightStem(toks[t]);tf[s]=(tf[s]||0)+1;}
+      tfa[i]=tf;dl[i]=toks.length;total+=toks.length;
+      for(var k in tf)df[k]=(df[k]||0)+1;
+    }
+    _idx={df:df,dl:dl,tf:tfa,avgdl:(total/docs.length)||1,N:docs.length};
+  }
+  function bm25(i,qs){
+    if(!_idx)buildIndex();
+    var k1=1.5,b=0.75,sc=0,tf=_idx.tf[i]||{};
+    for(var q=0;q<qs.length;q++){var f=tf[qs[q]]||0;if(!f)continue;
+      var idf=Math.log(1+(_idx.N-_idx.df[qs[q]]+0.5)/(_idx.df[qs[q]]+0.5));
+      sc+=idf*(f*(k1+1))/(f+k1*(1-b+b*(_idx.dl[i]/_idx.avgdl)));}
+    return sc;
+  }
+  function queryStems(P){var out=[];P.terms.concat(P.phrases).forEach(function(t){var s=lightStem(t);if(s)out.push(s);});return out;}
   function rootOn(){var c=document.getElementById('fRoot');return MORPH&&c&&c.checked;}
   function expandTerm(t){
     if(!rootOn())return [t];
@@ -583,7 +613,8 @@ window.startApp = function(){
     return true;
   }
   // ذاكرة مؤقتة للنص المُطبَّع لكل مستند
-  docs.forEach(function(d){
+  docs.forEach(function(d,i){
+    d._i=i;
     d._h=normStr((d.title||'')+' \n '+(d.full_text||''));
     d._distorted=!!d.distorted; d._distReason=d.distReason||'تشوّه';
   });
@@ -610,7 +641,13 @@ window.startApp = function(){
       return matchDoc(P,d._h);
     });
     var s=sortSel.value;
-    if(s==='date')r.sort(function(a,b){return dateKey(a).localeCompare(dateKey(b));});
+    if(s==='relevance'){
+      if(P.empty)return r; // بلا استعلام: أبقِ الترتيب الأصلي
+      var qs=queryStems(P);
+      if(qs.length){var sc={};r.forEach(function(d){sc[d._i]=bm25(d._i,qs);});
+        r.sort(function(a,b){return sc[b._i]-sc[a._i];});}
+    }
+    else if(s==='date')r.sort(function(a,b){return dateKey(a).localeCompare(dateKey(b));});
     else if(s==='title')r.sort(function(a,b){return (a.title||'').localeCompare(b.title||'','ar');});
     else if(s==='type')r.sort(function(a,b){return (a.doc_type||'').localeCompare(b.doc_type||'','ar');});
     return r;
