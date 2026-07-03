@@ -29,6 +29,7 @@ docker run -d --name legal-audit -p 8080:8080 \
 | POST | `/jobs` | رفع ملفات الوثائق → إنشاء مهمّة (يعيد `job_id`) |
 | POST | `/jobs/from-drive` | جلب الملفات من Google Drive / OneDrive برابط مشاركة → إنشاء مهمّة (انظر `README_CLOUD_DRIVES.md`) |
 | POST | `/drive/list` | معاينة ملفات رابط سحابي قبل الجلب (بلا تنزيل) |
+| GET/POST | `/admin/settings` | عرض/حفظ مفاتيح التفعيل (Azure OCR، Google، OneDrive) من الواجهة — تُحفظ في حجم البيانات وتسري فوراً |
 | GET  | `/jobs/{job_id}` | حالة المهمّة: `queued / downloading / running / done / error` |
 | GET  | `/jobs/{job_id}/result` | تنزيل حزمة المخرجات (ZIP) عند `done` |
 | GET  | `/jobs/{job_id}/log` | سجل المعالجة |

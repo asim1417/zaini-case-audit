@@ -63,13 +63,53 @@
     <button class="ghost" onclick="refreshStatus()">تحديث حالة الربط</button>
   </div>
   <div class="row" style="margin-top:12px">
-    <span>حالة الربط السحابي:</span>
+    <span>حالة التفعيل:</span>
     <span id="st-google" class="badge off">Google Drive — غير مفعّل</span>
     <span id="st-onedrive" class="badge off">OneDrive — غير مفعّل</span>
+    <span id="st-azure" class="badge off">OCR سحابي (Azure) — غير مفعّل</span>
   </div>
-  <p class="hint">التفعيل يتم مرة واحدة على الخادم عبر متغيّرات البيئة —
-     التفاصيل في <code>service/README_CLOUD_DRIVES.md</code>.</p>
+  <p class="hint">القراءة الأساسية (Tesseract العربي) محلية ومجانية وتعمل دائماً بلا مفاتيح.
+     المفاتيح أدناه اختيارية: الجلب من السحابة، وOCR أدق للمسح الصعب.</p>
   <div id="msg-status" class="msg"></div>
+
+  <details style="margin-top:12px">
+    <summary style="cursor:pointer;color:var(--brand);font-weight:600">⚙ التفعيل والإعدادات (تُحفظ على الخادم)</summary>
+    <div style="margin-top:12px">
+      <h3 style="font-size:.95rem;margin:0 0 6px">OCR سحابي — Azure Document Intelligence (اختياري، أدق للمسح الصعب)</h3>
+      <div class="row">
+        <label><input type="checkbox" id="s-az-on"> تفعيل</label>
+        <input type="text" id="s-az-ep" class="grow" dir="ltr" placeholder="Endpoint: https://xxx.cognitiveservices.azure.com">
+        <input type="password" id="s-az-key" class="grow" dir="ltr" placeholder="Key">
+      </div>
+      <h3 style="font-size:.95rem;margin:14px 0 6px">Google Drive — حساب خدمة</h3>
+      <textarea id="s-g-json" dir="ltr" rows="3" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:.8rem monospace"
+        placeholder='ألصق محتوى ملف JSON لحساب الخدمة {"type":"service_account", ...} — وشارك مجلد القضايا مع بريد الحساب'></textarea>
+      <h3 style="font-size:.95rem;margin:14px 0 6px">OneDrive — Microsoft Graph</h3>
+      <div class="row">
+        <input type="text" id="s-ms-cid" class="grow" dir="ltr" placeholder="Client ID">
+        <input type="text" id="s-ms-tid" class="grow" dir="ltr" placeholder="Tenant ID (للمؤسسات)">
+        <input type="password" id="s-ms-sec" class="grow" dir="ltr" placeholder="Client Secret (للمؤسسات)">
+        <input type="text" id="s-ms-user" class="grow" dir="ltr" placeholder="بريد صاحب OneDrive (للمؤسسات)">
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button onclick="saveSettings()">حفظ التفعيل</button>
+        <span class="hint">الحقل الفارغ لا يغيّر المحفوظ؛ اكتب "-" لحذف قيمة محفوظة.</span>
+      </div>
+      <div id="msg-settings" class="msg"></div>
+    </div>
+  </details>
+</div>
+
+<div class="card">
+  <h2>بيانات القضية (اختياري — يحسّن ربط الأطراف والأرقام في التقارير)</h2>
+  <div class="row">
+    <input type="text" id="caseNum" placeholder="رقم القضية">
+    <input type="text" id="caseTitle" class="grow" placeholder="اسم/وصف القضية">
+  </div>
+  <div class="row" style="margin-top:8px">
+    <input type="text" id="caseParties" class="grow" placeholder="أسماء الأطراف مفصولة بفواصل">
+    <input type="text" id="caseDeeds" class="grow" placeholder="أرقام الصكوك/الأحكام المعروفة مفصولة بفواصل">
+  </div>
 </div>
 
 <div class="card">
@@ -124,26 +164,53 @@ async function api(path, opts){
   return body;
 }
 
-// ─── حالة الربط ───
+// ─── حالة التفعيل + الإعدادات ───
 const MODES = {service_account:'حساب خدمة', oauth_refresh_token:'OAuth شخصي',
                client_credentials:'تطبيق مؤسسي', device_code:'جلسة محفوظة'};
+function applyStatus(s){
+  const d = s.drives || s;
+  for (const p of ['google','onedrive']){
+    const el = $('st-'+p), name = p==='google' ? 'Google Drive' : 'OneDrive';
+    if (d[p] && d[p].configured){ el.className='badge on';
+      el.textContent = name + ' — مفعّل (' + (MODES[d[p].mode]||d[p].mode) + ')'; }
+    else { el.className='badge off'; el.textContent = name + ' — غير مفعّل'; }
+  }
+  const az = $('st-azure'), a = s.azure_ocr || {};
+  if (a.enabled){ az.className='badge on'; az.textContent='OCR سحابي (Azure) — مفعّل'; }
+  else if (a.configured){ az.className='badge off'; az.textContent='OCR سحابي (Azure) — مهيأ (غير مفعّل)'; }
+  else { az.className='badge off'; az.textContent='OCR سحابي (Azure) — غير مفعّل'; }
+}
 async function refreshStatus(){
   say('msg-status','');
+  try{ applyStatus(await api('/admin/settings')); }
+  catch(e){ say('msg-status','تعذّر جلب الحالة: '+e.message,'err'); }
+}
+async function saveSettings(){
+  say('msg-settings','جارٍ الحفظ…');
+  const values = {
+    AZURE_DI_ENABLED: $('s-az-on').checked ? 'true' : '-',
+    AZURE_DI_ENDPOINT: $('s-az-ep').value, AZURE_DI_KEY: $('s-az-key').value,
+    GOOGLE_SERVICE_ACCOUNT_JSON: $('s-g-json').value,
+    MS_CLIENT_ID: $('s-ms-cid').value, MS_TENANT_ID: $('s-ms-tid').value,
+    MS_CLIENT_SECRET: $('s-ms-sec').value, MS_DRIVE_USER: $('s-ms-user').value,
+  };
   try{
-    const s = await api('/drive/status');
-    for (const p of ['google','onedrive']){
-      const el = $('st-'+p), name = p==='google' ? 'Google Drive' : 'OneDrive';
-      if (s[p].configured){ el.className='badge on';
-        el.textContent = name + ' — مفعّل (' + (MODES[s[p].mode]||s[p].mode) + ')'; }
-      else { el.className='badge off'; el.textContent = name + ' — غير مفعّل'; }
-    }
-  }catch(e){ say('msg-status','تعذّر جلب الحالة: '+e.message,'err'); }
+    const r = await api('/admin/settings',{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify({values})});
+    applyStatus(r);
+    say('msg-settings','حُفظ التفعيل'+(r.api_key_protected?'':' — تنبيه: الخدمة بلا مفتاح API؛ يُنصح بضبط API_KEY لحماية الإعدادات')+'.', r.api_key_protected?'ok':'err');
+    $('s-az-key').value=''; $('s-g-json').value=''; $('s-ms-sec').value='';
+  }catch(e){ say('msg-settings',e.message,'err'); }
 }
 
 // ─── الجلب السحابي ───
+const splitList = s => s.split(/[،,;\n]+/).map(t=>t.trim()).filter(Boolean);
 function driveBody(){
   return JSON.stringify({provider:$('provider').value, link:$('link').value.trim(),
-                         recursive:$('recursive').checked});
+                         recursive:$('recursive').checked,
+                         case_number:$('caseNum').value.trim(), case_title:$('caseTitle').value.trim(),
+                         parties:splitList($('caseParties').value),
+                         deed_numbers:splitList($('caseDeeds').value)});
 }
 async function previewDrive(){
   if(!$('link').value.trim()) return say('msg-drive','ألصق الرابط أولاً.','err');
@@ -178,6 +245,10 @@ async function uploadFiles(){
   if(!fs.length) return say('msg-upload','اختر ملفات أولاً.','err');
   const fd = new FormData();
   for(const f of fs) fd.append('files', f);
+  fd.append('case_number', $('caseNum').value.trim());
+  fd.append('case_title', $('caseTitle').value.trim());
+  fd.append('parties', $('caseParties').value);
+  fd.append('deed_numbers', $('caseDeeds').value);
   say('msg-upload','جارٍ الرفع ('+fs.length+' ملف)…');
   try{
     const r = await api('/jobs',{method:'POST', body:fd});

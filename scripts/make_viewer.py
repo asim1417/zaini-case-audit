@@ -532,6 +532,9 @@ APP_SHELL = r"""<!DOCTYPE html>
     <select id="cProv"><option value="google">Google Drive</option><option value="onedrive">OneDrive</option></select>
     <input type="text" id="cLink" dir="ltr" style="width:100%;box-sizing:border-box;margin-top:6px" placeholder="رابط المشاركة أو معرّف المجلد">
     <label><input type="checkbox" id="cRec" checked> شمول المجلدات الفرعية</label></div>
+  <div class="opt"><b>بيانات القضية (اختياري — يحسّن ربط الأطراف):</b><br>
+    <input type="text" id="cNum" style="width:100%;box-sizing:border-box" placeholder="رقم القضية">
+    <input type="text" id="cParties" style="width:100%;box-sizing:border-box;margin-top:6px" placeholder="أسماء الأطراف مفصولة بفواصل"></div>
   <div class="opt"><label><input type="checkbox" id="cMerge" checked> دمج الوثائق الجديدة مع القضية الحالية (وإلا تُعرض كقضية جديدة)</label></div>
   <div class="acts"><button id="cPrev" class="alt">معاينة الملفات</button><button id="cGo">جلب ومعالجة</button></div>
   <div id="cMsg" style="margin-top:8px;font-size:13px;white-space:pre-wrap;max-height:180px;overflow:auto"></div>
@@ -1087,7 +1090,9 @@ window.startApp = function(){
     return u;}
   function cqk(){var k=cKey.value.trim();return k?'?x_api_key='+encodeURIComponent(k):'';}
   function cbody(){return JSON.stringify({provider:document.getElementById('cProv').value,
-    link:document.getElementById('cLink').value.trim(),recursive:document.getElementById('cRec').checked});}
+    link:document.getElementById('cLink').value.trim(),recursive:document.getElementById('cRec').checked,
+    case_number:document.getElementById('cNum').value.trim(),
+    parties:document.getElementById('cParties').value.split(/[،,;\n]+/).map(function(s){return s.trim();}).filter(Boolean)});}
   function capi(path,opts,cb){fetch(cbase()+path+cqk(),opts)
     .then(function(r){return r.json().then(function(b){cb(r.ok?null:(b.detail||('HTTP '+r.status)),b);});})
     .catch(function(e){cb('تعذّر الاتصال بالخدمة: '+e.message);});}

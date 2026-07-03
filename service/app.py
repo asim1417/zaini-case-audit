@@ -16,7 +16,9 @@ Google Drive أو OneDrive عبر رابط مشاركة/معرّف مجلد — 
 import os, sys, io, csv, json, uuid, shutil, threading, datetime
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import re
+
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
@@ -31,6 +33,34 @@ JOBS_ROOT = Path(os.environ.get("JOBS_ROOT", "/data/jobs"))
 JOBS_ROOT.mkdir(parents=True, exist_ok=True)
 API_KEY = os.environ.get("API_KEY", "")          # إن ضُبط، يلزم تمريره بترويسة X-API-Key
 MAX_FILES = int(os.environ.get("MAX_FILES", "500"))
+
+# ─── إعدادات دائمة قابلة للضبط من الواجهة (تُحفظ في حجم البيانات وتُطبَّق على البيئة) ───
+SETTINGS_FILE = JOBS_ROOT / "settings.json"
+SETTINGS_KEYS = (
+    # OCR سحابي اختياري (Azure Document Intelligence) — يقرأ البيئة وقت التنفيذ
+    "ENGINE_MODE", "AZURE_DI_ENABLED", "AZURE_DI_ENDPOINT", "AZURE_DI_KEY", "AZURE_DI_MODEL",
+    # Google Drive
+    "GOOGLE_SERVICE_ACCOUNT_JSON", "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_OAUTH_REFRESH_TOKEN",
+    # OneDrive / Microsoft Graph
+    "MS_CLIENT_ID", "MS_TENANT_ID", "MS_CLIENT_SECRET", "MS_DRIVE_USER", "MS_DRIVE_ID",
+)
+
+
+def _load_settings():
+    """يطبّق الإعدادات المحفوظة على بيئة العملية عند الإقلاع (قيم الواجهة تغلب)."""
+    if not SETTINGS_FILE.exists():
+        return
+    try:
+        saved = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    for k, v in saved.items():
+        if k in SETTINGS_KEYS and isinstance(v, str) and v:
+            os.environ[k] = v
+
+
+_load_settings()
 
 app = FastAPI(title="خدمة الفحص القانوني الآلي", version="1.0",
               description="معالجة وثائق قانونية عربية (OCR + فهرسة + بطاقات + حزمة) — محلية بالكامل.")
@@ -91,8 +121,87 @@ def drive_status(x_api_key: str = ""):
     return cloud_drives.providers_status()
 
 
+def _azure_status():
+    ep = (os.environ.get("AZURE_DI_ENDPOINT")
+          or os.environ.get("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT") or "").strip()
+    key = (os.environ.get("AZURE_DI_KEY")
+           or os.environ.get("AZURE_DOCUMENT_INTELLIGENCE_KEY") or "").strip()
+    on = (os.environ.get("AZURE_DI_ENABLED", "").strip().lower() in ("1", "true", "yes")
+          or os.environ.get("ENGINE_MODE", "").strip().lower() == "azure")
+    return {"configured": bool(ep and key), "enabled": bool(on and ep and key)}
+
+
+def _settings_summary():
+    return {"keys": {k: bool(os.environ.get(k, "").strip()) for k in SETTINGS_KEYS},
+            "drives": cloud_drives.providers_status(), "azure_ocr": _azure_status(),
+            "api_key_protected": bool(API_KEY)}
+
+
+@app.get("/admin/settings")
+def get_settings(x_api_key: str = ""):
+    """أي المفاتيح مضبوط (دون كشف القيم) + حالة تفعيل OCR السحابي والمزوّدين."""
+    _auth(x_api_key)
+    return _settings_summary()
+
+
+class SettingsUpdate(BaseModel):
+    """قيم للتحديث: نص فارغ يُتجاهل، وشرطة \"-\" تحذف القيمة المحفوظة."""
+    values: dict
+
+
+@app.post("/admin/settings")
+def set_settings(req: SettingsUpdate, x_api_key: str = ""):
+    _auth(x_api_key)
+    saved = {}
+    if SETTINGS_FILE.exists():
+        try:
+            saved = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            saved = {}
+    changed = []
+    for k, v in (req.values or {}).items():
+        if k not in SETTINGS_KEYS or not isinstance(v, str):
+            continue
+        v = v.strip()
+        if not v:
+            continue                       # فارغ = لا تغيير (لا يمسح المحفوظ)
+        changed.append(k)
+        if v == "-":                       # شرطة = حذف صريح
+            saved.pop(k, None)
+            os.environ.pop(k, None)
+        else:
+            saved[k] = v
+            os.environ[k] = v
+    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SETTINGS_FILE.write_text(json.dumps(saved, ensure_ascii=False, indent=1), encoding="utf-8")
+    try:
+        os.chmod(SETTINGS_FILE, 0o600)
+    except Exception:
+        pass
+    return {"updated": changed, **_settings_summary()}
+
+
+def _split_list(s: str) -> list:
+    return [t.strip() for t in re.split(r"[،,;\n]+", s or "") if t.strip()]
+
+
+def _write_case_config(job_dir: Path, case_number="", case_title="", parties=None, deed_numbers=None):
+    """إعداد قضية مخصّص للمهمّة (اختياري) — يحسّن ربط الأطراف وأرقام الصكوك في التقارير."""
+    parties = [p for p in (parties or []) if p and p.strip()]
+    deeds = [d for d in (deed_numbers or []) if d and d.strip()]
+    if not ((case_number or "").strip() or (case_title or "").strip() or parties or deeds):
+        return
+    cfg = {"case": {"number": (case_number or "").strip(), "title": (case_title or "").strip()},
+           "deed_numbers_known": deeds,
+           "parties": {p.strip(): [p.strip()] for p in parties}}
+    (job_dir / "case_config.json").write_text(
+        json.dumps(cfg, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 @app.post("/jobs")
-async def create_job(files: list[UploadFile] = File(...), x_api_key: str = ""):
+async def create_job(files: list[UploadFile] = File(...), x_api_key: str = "",
+                     case_number: str = Form(""), case_title: str = Form(""),
+                     parties: str = Form(""), deed_numbers: str = Form("")):
     _auth(x_api_key)
     if not files:
         raise HTTPException(status_code=400, detail="لا ملفات")
@@ -104,6 +213,8 @@ async def create_job(files: list[UploadFile] = File(...), x_api_key: str = ""):
         dest = up / Path(f.filename).name
         with dest.open("wb") as out:
             shutil.copyfileobj(f.file, out)
+    _write_case_config(JOBS_ROOT / job_id, case_number, case_title,
+                       _split_list(parties), _split_list(deed_numbers))
     with _LOCK:
         JOBS[job_id] = {"status": "queued", "created": datetime.datetime.now().isoformat(),
                         "docs": 0, "error": None}
@@ -112,10 +223,15 @@ async def create_job(files: list[UploadFile] = File(...), x_api_key: str = ""):
 
 
 class DriveRequest(BaseModel):
-    """طلب جلب من سحابة: provider = google | onedrive، link = رابط مشاركة أو معرّف مجلد/ملف."""
+    """طلب جلب من سحابة: provider = google | onedrive، link = رابط مشاركة أو معرّف مجلد/ملف.
+    حقول القضية اختيارية — تحسّن ربط الأطراف والأرقام في التقارير."""
     provider: str
     link: str
     recursive: bool = True
+    case_number: str = ""
+    case_title: str = ""
+    parties: list[str] = []
+    deed_numbers: list[str] = []
 
 
 def _download_then_process(job_id, req: DriveRequest):
@@ -162,6 +278,8 @@ def create_job_from_drive(req: DriveRequest, x_api_key: str = ""):
         raise HTTPException(status_code=400, detail="لا رابط/معرّف")
     job_id = uuid.uuid4().hex[:12]
     (JOBS_ROOT / job_id / "uploads").mkdir(parents=True, exist_ok=True)
+    _write_case_config(JOBS_ROOT / job_id, req.case_number, req.case_title,
+                       req.parties, req.deed_numbers)
     with _LOCK:
         JOBS[job_id] = {"status": "downloading", "created": datetime.datetime.now().isoformat(),
                         "docs": 0, "error": None, "source": req.provider}

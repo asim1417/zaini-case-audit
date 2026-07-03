@@ -7,7 +7,7 @@ pipeline.py — تشغيل محرّك الفحص القانوني على مهم�
 توليد الحزمة الوثائقية + الملحق المالي + التقارير، ثم ضغط النتائج.
 يُستدعى من خدمة API لكل مهمّة بمعزل (CASE_ROOT خاص بكل مهمّة).
 """
-import os, sys, re, json, shutil, zipfile, datetime, subprocess
+import os, sys, re, copy, json, shutil, zipfile, datetime, subprocess
 from pathlib import Path
 
 # جذر المشروع ومجلد السكربتات الأصلية (المحرّك)
@@ -32,9 +32,32 @@ def _load_engine():
     return reocr_pilot, reocr_hard, audit_case, make_master_excel
 
 
+# إعداد القضية لكل مهمّة: نحفظ القيم الافتراضية العامة مرة واحدة ثم نعيدها قبل كل
+# مهمّة، فلا يتسرّب إعداد قضية سابقة إلى قضية جديدة في نفس العملية.
+_CASE_KEYS = ("CASE_NUMBERS_KNOWN", "DEED_NUMBERS_KNOWN", "PARTIES", "OTHER_ACTORS",
+              "COMPANY_PATTERNS", "COURTS", "CASE_TITLE", "CASE_FOLDER_NAME")
+_CASE_DEFAULTS = None
+
+
+def _apply_case_config(AZ, job_dir: Path, log):
+    global _CASE_DEFAULTS
+    if _CASE_DEFAULTS is None:
+        _CASE_DEFAULTS = {k: copy.deepcopy(getattr(AZ, k)) for k in _CASE_KEYS}
+    for k, v in _CASE_DEFAULTS.items():
+        setattr(AZ, k, copy.deepcopy(v))
+    cfg = job_dir / "case_config.json"
+    if cfg.exists():
+        os.environ["CASE_CONFIG"] = str(cfg)
+        AZ._load_case_config()
+        log("إعداد قضية مخصّص: أطراف=%d، أرقام صكوك=%d" % (len(AZ.PARTIES), len(AZ.DEED_NUMBERS_KNOWN)))
+    else:
+        os.environ.pop("CASE_CONFIG", None)
+
+
 def run_job(job_dir: Path, log=print):
     """يعالج كل الملفات في job_dir/uploads وينتج job_dir/outputs + result.zip."""
     RP, RH, AZ, MME = _load_engine()
+    _apply_case_config(AZ, job_dir, log)
     uploads = job_dir / "uploads"
     out = job_dir / "outputs"
     (out / "json").mkdir(parents=True, exist_ok=True)
