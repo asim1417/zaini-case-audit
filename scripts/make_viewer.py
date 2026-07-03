@@ -1063,12 +1063,15 @@ window.startApp = function(){
   function renderTerms(){
     var T=window.TERMS;
     if(!T||!T.concepts){tableView.innerHTML='<div class="empty" style="margin-top:40px">لا مصطلحات.</div>';return;}
-    var h='<div class="statwrap"><h3>المصطلحات القانونية المفتاحية — اضغط للبحث عنها (بكل اشتقاقاتها)</h3>';
     var mx=T.concepts[0]?T.concepts[0].n:1;
-    T.concepts.forEach(function(c){
-      h+='<div class="sbar"><span class="lbl" data-t="'+esc(c.k)+'" style="text-decoration:underline dotted;width:110px">'+esc(c.k)+'</span>'+
-        '<span class="bb" style="width:'+Math.max(4,260*c.n/mx)+'px;background:#7c3aed"></span>'+
-        '<span class="cnt">'+c.n+' مرة · '+c.d+' وثيقة</span></div>';});
+    var cats=[];T.concepts.forEach(function(c){if(cats.indexOf(c.cat||'')<0)cats.push(c.cat||'');});
+    var h='<div class="statwrap"><h3>المصطلحات القانونية المفتاحية حسب الفئة — اضغط أي مصطلح للبحث عنه بكل اشتقاقاته ('+T.concepts.length+' مصطلحاً)</h3>';
+    cats.forEach(function(cat){
+      h+='<h3 style="color:#7c3aed;margin:12px 0 4px">'+esc(cat||'أخرى')+'</h3>';
+      T.concepts.filter(function(c){return (c.cat||'')===cat;}).forEach(function(c){
+        h+='<div class="sbar"><span class="lbl" data-t="'+esc(c.k)+'" style="text-decoration:underline dotted;width:110px">'+esc(c.k)+'</span>'+
+          '<span class="bb" style="width:'+Math.max(4,260*c.n/mx)+'px;background:#7c3aed"></span>'+
+          '<span class="cnt">'+c.n+' مرة · '+c.d+' وثيقة</span></div>';});});
     h+='</div>';
     tableView.innerHTML=h;
     tableView.querySelectorAll('.sbar .lbl[data-t]').forEach(function(el){el.onclick=function(){
