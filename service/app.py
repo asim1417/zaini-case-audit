@@ -6,6 +6,10 @@ app.py — خدمة REST API لمحرّك الفحص القانوني (FastAPI).
 نمط مهام غير متزامن: ارفع الملفات → احصل على job_id → تابع الحالة → نزّل الحزمة.
 كل المعالجة محلية على خادمكم؛ لا تخرج البيانات لأي خدمة خارجية.
 
+جلب سحابي (اختياري): POST /jobs/from-drive يجلب الملفات مباشرة من
+Google Drive أو OneDrive عبر رابط مشاركة/معرّف مجلد — انظر cloud_drives.py
+و README_CLOUD_DRIVES.md لتهيئة المصادقة.
+
 التشغيل المحلي:  uvicorn app:app --host 0.0.0.0 --port 8080
 التوثيق التفاعلي: GET /docs   (OpenAPI/Swagger يولّده FastAPI تلقائياً)
 """
@@ -14,8 +18,10 @@ from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
 
 import pipeline
+import cloud_drives
 
 JOBS_ROOT = Path(os.environ.get("JOBS_ROOT", "/data/jobs"))
 JOBS_ROOT.mkdir(parents=True, exist_ok=True)
@@ -76,6 +82,64 @@ async def create_job(files: list[UploadFile] = File(...), x_api_key: str = ""):
                         "docs": 0, "error": None}
     threading.Thread(target=_process, args=(job_id,), daemon=True).start()
     return {"job_id": job_id, "status": "queued"}
+
+
+class DriveRequest(BaseModel):
+    """طلب جلب من سحابة: provider = google | onedrive، link = رابط مشاركة أو معرّف مجلد/ملف."""
+    provider: str
+    link: str
+    recursive: bool = True
+
+
+def _download_then_process(job_id, req: DriveRequest):
+    """ينزّل ملفات السحابة إلى uploads ثم يمرّر المهمّة للمعالجة الاعتيادية."""
+    jd = JOBS_ROOT / job_id
+    up = jd / "uploads"
+    logs = (jd / "log.txt").open("a", encoding="utf-8")
+    def log(m):
+        logs.write("%s  %s\n" % (datetime.datetime.now().strftime("%H:%M:%S"), m)); logs.flush()
+    try:
+        log("جلب من %s: %s" % (req.provider, req.link))
+        paths = cloud_drives.fetch_to_dir(req.provider, req.link, up,
+                                          recursive=req.recursive, max_files=MAX_FILES, log=log)
+        log("اكتمل التنزيل: %d ملف" % len(paths))
+    except Exception as e:
+        log("خطأ الجلب السحابي: %s" % e)
+        with _LOCK:
+            JOBS[job_id].update(status="error", error=str(e))
+        logs.close()
+        return
+    logs.close()
+    _process(job_id)
+
+
+@app.post("/drive/list")
+def drive_list(req: DriveRequest, x_api_key: str = ""):
+    """معاينة الملفات القابلة للمعالجة تحت الرابط دون تنزيل (للواجهة قبل إنشاء المهمّة)."""
+    _auth(x_api_key)
+    try:
+        items = cloud_drives.list_remote(req.provider, req.link, req.recursive)
+    except cloud_drives.DriveError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"count": len(items), "files": items}
+
+
+@app.post("/jobs/from-drive")
+def create_job_from_drive(req: DriveRequest, x_api_key: str = ""):
+    """إنشاء مهمّة تُجلب ملفاتها مباشرة من Google Drive أو OneDrive."""
+    _auth(x_api_key)
+    if req.provider.strip().lower() not in cloud_drives.PROVIDERS:
+        raise HTTPException(status_code=400,
+                            detail="مزوّد غير مدعوم: %r (المدعوم: google | onedrive)" % req.provider)
+    if not req.link.strip():
+        raise HTTPException(status_code=400, detail="لا رابط/معرّف")
+    job_id = uuid.uuid4().hex[:12]
+    (JOBS_ROOT / job_id / "uploads").mkdir(parents=True, exist_ok=True)
+    with _LOCK:
+        JOBS[job_id] = {"status": "downloading", "created": datetime.datetime.now().isoformat(),
+                        "docs": 0, "error": None, "source": req.provider}
+    threading.Thread(target=_download_then_process, args=(job_id, req), daemon=True).start()
+    return {"job_id": job_id, "status": "downloading"}
 
 
 @app.get("/jobs/{job_id}")
