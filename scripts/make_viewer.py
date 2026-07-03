@@ -672,6 +672,12 @@ window.startApp = function(){
     countEl.textContent=total+' نتيجة في '+fs.length+' وثيقة';
     if(!total)listEl.innerHTML='<div class="empty" style="margin-top:30px">لا نتائج.</div>';
   }
+  function hlText(text,P){ // تظليل المطابقات في نصّ قصير (العنوان)
+    var pos=posOf(P);if(!pos.length)return esc(text);
+    var r=rangesOf(text,pos);if(!r.length)return esc(text);
+    var out='',c=0;for(var k=0;k<r.length;k++){if(r[k][0]<c)continue;out+=esc(text.slice(c,r[k][0]))+'<mark>'+esc(text.slice(r[k][0],r[k][1]))+'</mark>';c=r[k][1];}
+    return out+esc(text.slice(c));
+  }
   function renderList(){
     var fs=filtered();countEl.textContent=(fs.length===docs.length?fs.length+' وثيقة':fs.length+' من '+docs.length+' وثيقة');
     document.getElementById('scMatch').textContent=fs.length;document.getElementById('scAll').textContent=docs.length;
@@ -695,7 +701,8 @@ window.startApp = function(){
       var body=document.createElement('div');body.style.flex='1';
       var fl=flags[d.id]?' <span class="flag">'+esc(flags[d.id])+'</span>':'';
       var qb=(d.issues&&d.issues.q!=null)?' <span class="qb" style="background:'+(d.issues.q>=85?'#dcfce7;color:#166534':d.issues.q>=70?'#fef9c3;color:#854d0e':'#fee2e2;color:#b91c1c')+'">'+d.issues.q+'%</span>':'';
-      body.innerHTML='<div class="t"><span class="num">'+(d.n||'')+'</span> '+(notes[d.id]?'📝 ':'')+esc(d.title)+qcDot(d)+qb+hb+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
+      var _ti=(_qs?hlText(d.title,_P):esc(d.title));
+      body.innerHTML='<div class="t"><span class="num">'+(d.n||'')+'</span> '+(notes[d.id]?'📝 ':'')+_ti+qcDot(d)+qb+hb+(d._distorted?' <span class="distb" title="'+esc(d._distReason||'تشوّه')+'">⚠ مشوّه</span>':'')+'</div>'+
         '<div class="s">'+esc(d.doc_type)+(d.card&&d.card['التاريخ']?' · '+esc(d.card['التاريخ']):'')+fl+'</div>';
       body.onclick=function(){openDoc(d);};
       div.appendChild(cb);div.appendChild(body);return div;
