@@ -1,0 +1,61 @@
+
+# حزمة المخرجات المُسلّمة (تُولَّد عند الطلب - لا تُرفع)
+zaini_case_audit_output/zaini_outputs_bundle.zip
+*.zip
+
+# مجلدات ثنائية وسيطة (تنزيلات خام / فك ضغط / إعادة OCR) - لا تُرفع
+zaini_case_audit_output/staging/raw/
+zaini_case_audit_output/staging/extracted/
+zaini_case_audit_output/staging/reocr/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# نسخة الواجهة المولّدة لكل قضية (الأصل المنشور في docs/)
+zaini_case_audit_output/viewer/
+
+# مخرجات التنقيح: نسخة احتياطية و PDF كبير (يُولَّد محلياً)
+zaini_case_audit_output/outputs/cleaned/_backup/
+zaini_case_audit_output/outputs/cleaned/*.pdf
+
+# حزمة الوثائق: PDF كبير (يُرسَل/يُولَّد محلياً)
+
+# عيّنة إعادة OCR: أصول خام وصور صفحات (لا تُرفع)
+zaini_case_audit_output/staging/reocr_pilot/
+zaini_case_audit_output/outputs/reocr_pilot/page_img/
+
+zaini_case_audit_output/outputs/reocr_update/_backup/
+zaini_case_audit_output/staging/reocr_batch/
+zaini_case_audit_output/outputs/reocr_hard/_t.png
+zaini_case_audit_output/outputs/reocr_hard/page_img/
+service/__pycache__/
+
+# ===== حظر رفع أي بيانات قضية (سرّية) — الكود فقط يُرفع =====
+zaini_case_audit_output/outputs/
+zaini_case_audit_output/staging/
+zaini_case_audit_output/viewer/
+zaini_case_audit_output/*.html
+docs/
+zaini_case_audit_output/case_config.json
+zaini_case_audit_output/unreadable/
+zaini_case_audit_output/logs/
+
+# أسرار البيئة المحلية (مفاتيح API) — لا تُرفع
+.env
+.env.local
+
+# مخرجات تجربة Azure (مؤقتة)
+document.pdf
+azure_ocr_output.txt
+local_ocr_output.txt
+ocr_comparison_report.txt
+*.log
+
+# عارض مولّد بالمسار الخطأ في الجذر (بيانات قضية) — لا يُرفع
+/viewer/
+
+# خادم القضية: قاعدة البيانات وبيانات القضية (سرّية — لا تُرفع)
+service/*.db
+case.db
+service/full_documents.jsonl

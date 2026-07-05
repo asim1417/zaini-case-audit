@@ -1,0 +1,324 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+make_master_excel.py
+ملف Excel رئيسي: صف واحد لكل مستند يضم الرابط والعنوان والتاريخ والقسم والنوع
+وملخّصاً آلياً مهيكلاً والنص الكامل المقروء.
+المخرج: outputs/excel/00_master_documents.xlsx  (+ نسخة CSV)
+الاستخدام: python3 make_master_excel.py --staging <staging_dir>
+"""
+import argparse
+import csv
+import json
+import re
+from pathlib import Path
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
+
+import audit_case as AZ
+import make_word as MW  # لإعادة استخدام دوال Word (RTL/عناوين)
+
+OUT_XLSX = AZ.OUT_XLSX
+OUT_CSV = AZ.OUT_CSV
+OUT_JSON = AZ.OUT_JSON
+OUT_WORD = AZ.OUTPUT_ROOT / "outputs" / "word"
+DOCS_DIR = OUT_WORD / "documents"
+DOCS_DIR.mkdir(parents=True, exist_ok=True)
+TAG_S = AZ.TAG_SCRIPT
+TAG_R = AZ.TAG_NEEDS_REVIEW
+
+CELL_MAX = 32000  # حدّ خلية Excel ~32767
+DATE_IN_TITLE = re.compile(r"(\d{1,2}[-/]\d{1,2}[-/]\d{3,4}|\d{3,4}[-/]\d{1,2}[-/]\d{1,2})")
+
+
+def safe_name(s):
+    s = re.sub(r"[\\/:*?\"<>|\n\r\t]", "_", s or "")
+    s = re.sub(r"\s+", " ", s).strip()
+    # احذف الامتداد الأصلي إن وُجد لتفادي الامتداد المزدوج (مثل .pdf.docx)
+    s = re.sub(r"\.(pdf|docx?|xlsx?|jpe?g|png|rar|zip|txt)$", "", s, flags=re.I).strip()
+    return s[:80]
+
+
+AUTHORITIES = [
+    "مجلس القضاء الأعلى", "المحكمة العليا", "محكمة الاستئناف", "دائرة الاستئناف",
+    "المحكمة التجارية بجدة", "المحكمة التجارية", "المحكمة العامة بجدة", "المحكمة العامة",
+    "ديوان المظالم", "كتابة العدل", "وزارة العدل", "التفتيش القضائي", "هيئة النظر",
+]
+RE_CIRCUIT = re.compile(r"(?:ال)?دائر[ةه]\s+(الاولى|الأولى|الثاني[ةه]|الثالث[ةه]|الرابع[ةه]|"
+                        r"الخامس[ةه])(?:\s+التجاري[ةه])?")
+RE_DEED = re.compile(r"(?:الصك|صك)\s*(?:رقم)?\s*[:：]?\s*(\d{6,})")
+RE_CASE = re.compile(r"(?:القضي[ةه]|قضي[ةه]|الدعوى|دعوى)\s*(?:رقم)?\s*[:：]?\s*(\d{7,})")
+
+
+RE_HIJRI_CARD = re.compile(r"1[34]\d{2}\s*[/\-]\s*\d{1,2}\s*[/\-]\s*\d{1,2}"
+                           r"|\d{1,2}\s*[/\-]\s*\d{1,2}\s*[/\-]\s*1[34]\d{2}")
+
+
+def build_card(f, text):
+    """بطاقة تعريف موحّدة: تُستخرج هوية المستند من «منطقة الترويسة» (أعلى النص)
+    لا من المتن، لتفادي التقاط أرقام/جهات/تواريخ مُشار إليها في ثنايا الحكم."""
+    e = f.get("entities", {})
+    t = text or ""
+    title = f.get("title", "") or ""
+    head = "\n".join(t.split("\n")[:18])[:1000]   # منطقة الترويسة (أعلى المستند)
+    rows = [("نوع المستند", f.get("doc_type", "") or "غير مصنف")]
+    # الجهة المصدِرة: من الترويسة أولاً (الأدقّ)، وإلا من كيانات المحاكم
+    auth = next((a for a in AUTHORITIES if a in head), "")
+    if not auth:
+        auth = next((a for a in AUTHORITIES if a in t), "") or (e.get("courts") or [""])[0]
+    if auth:
+        rows.append(("الجهة المصدِرة", auth))
+    m = RE_CIRCUIT.search(head) or RE_CIRCUIT.search(t)
+    if m:
+        rows.append(("الدائرة", "الدائرة " + m.group(1)))
+    # رقم القضية: من الكيانات، ثم من العنوان (موثوق)، ثم من الترويسة
+    title_case = re.search(r"\b\d{8}\b", title)
+    case = ((e.get("case_numbers") or [None])[0]
+            or (title_case.group(0) if title_case else "")
+            or (RE_CASE.search(head).group(1) if RE_CASE.search(head) else ""))
+    if case:
+        rows.append(("رقم القضية", case))
+    # رقم الصك/الحكم: من الترويسة (صك هذا المستند) ثم من القائمة المعروفة
+    md = RE_DEED.search(head)
+    deed = (md.group(1) if md else "") or (e.get("deed_numbers_known") or [""])[0]
+    if deed:
+        rows.append(("رقم الصك/الحكم", deed))
+    # التاريخ: يُفضَّل تاريخ العنوان (موثوق)، ثم تاريخ الترويسة
+    mt = DATE_IN_TITLE.search(title)
+    mh = RE_HIJRI_CARD.search(head)
+    date = (mt.group(1) if mt else "") or (mh.group(0) if mh else "")
+    if date:
+        rows.append(("التاريخ", date))
+    if e.get("parties"):
+        rows.append(("الأطراف", "، ".join(e["parties"])))
+    if e.get("amounts"):
+        clean = [a for a in e["amounts"] if len(re.sub(r"[^\d]", "", a)) <= 10][:3]
+        if clean:
+            rows.append(("مبالغ بارزة", "، ".join(clean) + " ريال"))
+    return rows
+
+
+def write_doc_word(n, f, text, fixed):
+    """ملف Word مستقل بالنص الكامل لمستند واحد (لا قصّ)."""
+    from docx import Document
+    from docx.shared import RGBColor
+    doc = Document()
+    MW.style_doc(doc)
+    MW.add_heading_rtl(doc, f.get("title", "")[:150], level=1)
+    MW.add_para_rtl(doc, "الرابط: " + (f.get("viewUrl", "") or ""), italic=True,
+                    color=RGBColor(0x05, 0x63, 0xC1))
+    MW.add_para_rtl(doc, f"{TAG_S}  {TAG_R}", italic=True)
+    if f["id"] in fixed:
+        MW.add_para_rtl(doc, "[نص ممسوح OCR صُحِّح ترتيبه آلياً — قد يحتوي أخطاء طفيفة]",
+                        italic=True, color=RGBColor(0xC0, 0x00, 0x00))
+    # بطاقة تعريف موحّدة (تُبسّط الترويسة المختلفة الشكل لكل مستند)
+    MW.add_heading_rtl(doc, "بطاقة تعريف المستند", level=2)
+    for label, value in build_card(f, text):
+        p = doc.add_paragraph()
+        MW.set_rtl(p)
+        r1 = p.add_run(f"{label}: ")
+        r1.bold = True
+        p.add_run(MW.xml_safe(str(value)))
+    doc.add_paragraph("")
+    # للأحكام/الصكوك/المحاضر/المذكرات: قسّم النص إلى أقسام واضحة (ترويسة/أطراف/متن)
+    body = text
+    if f.get("doc_type") in ("حكم / صك", "محضر", "مذكرة قضائية", "صحيفة دعوى",
+                             "شكوى", "إخطار مطالبة", "مراسلة"):
+        try:
+            import format_minutes as FM
+            body = FM.structure_text(text)
+        except Exception:  # noqa
+            body = text
+    for chunk in re.split(r"\n{2,}", body):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        # اجعل عناوين الأقسام بارزة (تبدأ بـ === أو خط فاصل)
+        if chunk.startswith("=== ") or chunk.startswith("─"):
+            MW.add_heading_rtl(doc, chunk.strip("= ─"), level=2)
+            continue
+        for i in range(0, len(chunk), 6000):
+            MW.add_para_rtl(doc, chunk[i:i + 6000])
+    fname = f"{n:03d}_{safe_name(f.get('title',''))}.docx"
+    doc.save(str(DOCS_DIR / fname))
+    return f"word/documents/{fname}"
+
+
+def make_summary(f, text):
+    e = f.get("entities", {})
+    bits = [f"النوع: {f.get('doc_type','غير مصنف')}"]
+    if e.get("parties"):
+        bits.append("الأطراف: " + "، ".join(e["parties"]))
+    if e.get("courts"):
+        bits.append("المحاكم: " + "، ".join(e["courts"][:3]))
+    if e.get("case_numbers"):
+        bits.append("قضايا: " + "، ".join(e["case_numbers"]))
+    if e.get("deed_numbers_known"):
+        bits.append("صكوك: " + "، ".join(e["deed_numbers_known"]))
+    if e.get("amounts"):
+        # استبعد أرقام OCR الشاذة (أكبر من ~10 مليارات) من الملخّص
+        clean_amts = [a for a in e["amounts"] if len(re.sub(r"[^\d]", "", a)) <= 10]
+        if clean_amts:
+            bits.append("مبالغ: " + "، ".join(clean_amts[:4]) + " ريال")
+    if e.get("hijri_dates"):
+        bits.append("تواريخ هجرية: " + "، ".join(e["hijri_dates"][:4]))
+    # مقتطف افتتاحي نظيف
+    snippet = re.sub(r"\s+", " ", text).strip()
+    snippet = re.sub(r"^\[.*?\]\s*", "", snippet)  # احذف وسوم [أرشيف...]/[صفحة..]
+    if snippet:
+        bits.append("مقتطف: " + snippet[:300])
+    return " | ".join(bits)
+
+
+def availability(f):
+    """حالة إتاحة الرابط/الملف على Drive."""
+    if f.get("readable"):
+        return "متاح ✓"
+    t = f.get("title", "") or ""
+    if re.search(r"\(zip\)|\.zip|\bzip\b|\(rar\)|\.rar|\brar\b", t, re.I):
+        return "أرشيف كبير — افتحه يدوياً من Drive (لم يُستخرج نصه آلياً)"
+    if re.search(r"صورة|\.jpg|\.jpeg|\.png", t, re.I):
+        return "صورة — افتحها من Drive"
+    return "⚠️ رابط محذوف — الملف غير موجود في Drive"
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--staging", default=str(AZ.DEFAULT_STAGING))
+    args = ap.parse_args()
+
+    data = json.loads((OUT_JSON / "full_audit_data.json").read_text(encoding="utf-8"))
+    files = data["files"]
+    rdir = Path(args.staging) / "text_readable"
+    tdir = Path(args.staging) / "text"
+    fixed_ids = set()
+    fx = rdir / "_fixed_ids.json"
+    if fx.exists():
+        fixed_ids = set(json.loads(fx.read_text(encoding="utf-8")))
+
+    files.sort(key=lambda f: (f.get("parent_path", ""), f.get("title", "")))
+    # نظّف ملفات Word القديمة لكل وثيقة قبل إعادة التوليد (تجنّب تراكم النسخ القديمة)
+    for old in DOCS_DIR.glob("*.docx"):
+        try:
+            old.unlink()
+        except Exception:
+            pass
+
+    headers = ["#", "العنوان", "إتاحة الرابط", "رابط Drive", "ملف Word للنص الكامل",
+               "التاريخ", "القسم", "نوع المستند", "قابل للقراءة؟", "مصدر النص",
+               "عدد الأحرف", "ملخّص آلي (يحتاج مراجعة)", "وسم"]
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "كل المستندات"
+    ws.sheet_view.rightToLeft = True
+    ws.append(headers)
+    hfill = PatternFill("solid", fgColor="1F4E78")
+    hfont = Font(bold=True, color="FFFFFF")
+    for c in ws[1]:
+        c.fill = hfill
+        c.font = hfont
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.freeze_panes = "A2"
+
+    csv_rows = []
+    card_rows = []   # صفوف ورقة «بطاقات التعريف»
+    n = 0
+    for f in files:
+        rp = rdir / f"{f['id']}.txt"
+        p = rp if rp.exists() else (tdir / f"{f['id']}.txt")
+        text = p.read_text(encoding="utf-8", errors="replace") if p.exists() else ""
+        # التاريخ: من العنوان إن وُجد، وإلا تاريخ التعديل
+        m = DATE_IN_TITLE.search(f.get("title", "") or "")
+        date = m.group(1) if m else (f.get("modifiedTime", "") or "")[:10]
+        src = "OCR مُصحَّح" if f["id"] in fixed_ids else ("منطقي" if text else "—")
+        readable = "نعم" if f.get("readable") else "لا (يحتاج OCR/فك ضغط/غير متاح)"
+        summary = MW.xml_safe(make_summary(f, text))
+        n += 1
+        # ملف Word مستقل بالنص الكامل (لا قصّ) — يُنشأ فقط للملفات المقروءة
+        word_rel = write_doc_word(n, f, text, fixed_ids) if text else ""
+        avail = availability(f)
+        # صف بطاقة التعريف (لورقة منفصلة)
+        cd = dict(build_card(f, text))
+        card_rows.append([
+            n, f.get("title", ""), cd.get("نوع المستند", ""), cd.get("الجهة المصدِرة", ""),
+            cd.get("الدائرة", ""), cd.get("رقم القضية", ""), cd.get("رقم الصك/الحكم", ""),
+            cd.get("التاريخ", ""), cd.get("الأطراف", ""), cd.get("مبالغ بارزة", ""),
+            (word_rel.split("/")[-1] if word_rel else ""),
+        ])
+        row = [n, f.get("title", ""), avail, f.get("viewUrl", ""), word_rel, date,
+               f.get("parent_path", ""), f.get("doc_type", ""), readable, src,
+               f.get("text_chars", len(text)), summary, TAG_S]
+        row = [MW.xml_safe(x) if isinstance(x, str) else x for x in row]
+        ws.append(row)
+        # تنسيق صف
+        r = ws.max_row
+        # عمود الإتاحة (3): لوّن المحذوف بالأحمر، الأرشيف بالبرتقالي
+        acell = ws.cell(r, 3)
+        if avail.startswith("⚠️"):
+            acell.font = Font(color="C00000", bold=True)
+        elif "أرشيف" in avail or "صورة" in avail:
+            acell.font = Font(color="BF8F00")
+        link_cell = ws.cell(r, 4)
+        if f.get("viewUrl") and not avail.startswith("⚠️"):
+            link_cell.value = "🔗 فتح في Drive"
+            link_cell.hyperlink = f["viewUrl"]
+            link_cell.font = Font(color="0563C1", underline="single")
+        elif avail.startswith("⚠️"):
+            link_cell.value = "(رابط محذوف — لا تفتحه)"
+            link_cell.font = Font(color="C00000")
+        wcell = ws.cell(r, 5)
+        if word_rel:
+            wcell.hyperlink = "../" + word_rel  # رابط نسبي من مجلد excel إلى word
+            wcell.value = "📄 فتح المستند (Word)"
+            wcell.font = Font(color="0563C1", underline="single", bold=True)
+        for col in (2, 3, 7, 12):
+            ws.cell(r, col).alignment = Alignment(wrap_text=True, vertical="top", horizontal="right")
+        csv_rows.append([n, f.get("title", ""), avail, f.get("viewUrl", ""), word_rel, date,
+                         f.get("parent_path", ""), f.get("doc_type", ""), readable, src,
+                         f.get("text_chars", len(text)), summary, TAG_S])
+
+    widths = [5, 44, 26, 18, 22, 13, 24, 15, 22, 12, 10, 65, 18]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    # ورقة ثانية: بطاقات التعريف (الترويسات الموحّدة لكل المستندات)
+    ws2 = wb.create_sheet("بطاقات التعريف")
+    ws2.sheet_view.rightToLeft = True
+    chead = ["#", "العنوان", "نوع المستند", "الجهة المصدِرة", "الدائرة", "رقم القضية",
+             "رقم الصك/الحكم", "التاريخ", "الأطراف", "مبالغ بارزة", "ملف Word"]
+    ws2.append(chead)
+    for c in ws2[1]:
+        c.fill = hfill
+        c.font = hfont
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws2.freeze_panes = "A2"
+    for cr in card_rows:
+        ws2.append([MW.xml_safe(x) if isinstance(x, str) else x for x in cr])
+        rr = ws2.max_row
+        wc = ws2.cell(rr, 11)
+        if wc.value:
+            wc.hyperlink = "../word/documents/" + str(wc.value)
+            wc.value = "📄 فتح"
+            wc.font = Font(color="0563C1", underline="single")
+    for col, w in zip("ABCDEFGHIJK", [5, 40, 14, 20, 14, 12, 14, 13, 34, 26, 10]):
+        ws2.column_dimensions[col].width = w
+
+    wb.save(str(OUT_XLSX / "00_master_documents.xlsx"))
+
+    with open(OUT_CSV / "00_master_documents.csv", "w", encoding="utf-8-sig", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(headers)
+        w.writerows(csv_rows)
+
+    nword = len(list(DOCS_DIR.glob("*.docx")))
+    print(f"أُنشئ Excel الرئيسي: {n} مستنداً.")
+    print(f"ملفات Word مستقلة بالنص الكامل: {nword} في {DOCS_DIR}")
+    print(f" - {OUT_XLSX / '00_master_documents.xlsx'}")
+    print(f" - {OUT_CSV / '00_master_documents.csv'} (نص مختصر)")
+
+
+if __name__ == "__main__":
+    main()

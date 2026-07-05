@@ -1,0 +1,17 @@
+{
+  "_تعليق": "عدّل بمعطيات قضيتك. يُوضَع في cases/<اسم>/case_config.json",
+  "case": {
+    "number": "",
+    "other_numbers": [],
+    "title": "",
+    "case_folder_name": ""
+  },
+  "deed_numbers_known": [],
+  "parties": {
+    "اسم الطرف": [
+      "أنماط مطابقة الاسم"
+    ]
+  },
+  "other_actors": {},
+  "company_patterns": []
+}
